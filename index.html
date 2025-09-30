@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CoachTommy — Bulk Day Logger</title>
+<title>CoachTommy — Bulk Day Logger (Locked to Weekday)</title>
 <style>
   :root{--bg:#0f1115;--card:#171a21;--muted:#9aa4b2;--text:#e8edf2;--stroke:#2a3446;--accent:#7dd3fc;--ok:#6ee7b7}
   *{box-sizing:border-box}
@@ -25,14 +25,16 @@
   .ex-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
   .set-row{display:grid;grid-template-columns:70px 70px 70px 1fr;gap:8px;margin:6px 0}
   .tag{display:inline-block;padding:2px 8px;border:1px solid var(--stroke);border-radius:999px;font-size:12px;color:var(--muted);margin-left:8px}
+  .pill{display:inline-block;padding:2px 8px;border:1px solid var(--stroke);border-radius:999px;font-size:12px;margin-left:6px}
 </style>
 </head>
 <body>
 <header>
   <h1>CoachTommy — Bulk Day Logger</h1>
-  <div style="display:flex;gap:8px;align-items:center">
+  <div style="display:flex;gap:10px;align-items:center">
+    <span id="todayStamp" class="pill">—</span>
     <a id="exportBtn" class="btn secondary" onclick="exportJSON()">Export</a>
-    <label class="muted" style="margin:0">v1</label>
+    <label class="muted" style="margin:0">v1.1</label>
   </div>
 </header>
 
@@ -40,8 +42,8 @@
   <div class="card">
     <div class="row">
       <div>
-        <label>Workout Day</label>
-        <select id="daySel"></select>
+        <label>Workout Day (locked)</label>
+        <input id="dayLocked" disabled>
       </div>
       <div>
         <label>Start Time</label>
@@ -54,7 +56,7 @@
         <input id="dayNote" placeholder="Warm-up cues, targets, etc.">
       </div>
       <div style="display:flex;gap:8px;align-items:end">
-        <button class="btn" onclick="buildForm()">Build Today's Form</button>
+        <button class="btn" onclick="buildForm()">Build Today’s Form</button>
         <button class="btn secondary" onclick="prefillFromLast()">Prefill from last session</button>
       </div>
     </div>
@@ -62,7 +64,7 @@
   </div>
 
   <div id="formArea" class="card" style="display:none">
-    <h3 style="margin:0 0 10px">Today's Sets</h3>
+    <h3 style="margin:0 0 10px">Today’s Sets</h3>
     <div id="exerciseForms"></div>
     <div style="display:flex;gap:8px;margin-top:12px">
       <button class="btn ok" onclick="saveAll()">Save All Sets</button>
@@ -80,6 +82,15 @@
 </div>
 
 <script>
+// ---------- Config: Your 4‑day split ----------
+// Mon → Upper A, Tue → Lower A, Thu → Upper B, Fri → Lower B
+const SPLIT = {
+  1: "Upper A", // Monday
+  2: "Lower A", // Tuesday
+  4: "Upper B", // Thursday
+  5: "Lower B"  // Friday
+};
+
 const REP_RANGES = {
   "Barbell Bench Press":"6-8","Incline Dumbbell Press":"8-10","Overhead Press":"6-8","Dumbbell Lateral Raise":"12-15","Triceps Rope Pushdown":"12-15","Push-up":"AMRAP",
   "Pull-up":"6-10","Barbell Row":"8-10","Face Pull":"12-15","Barbell Curl":"10-12","Hammer Curl":"12-15",
@@ -93,18 +104,22 @@ const START_W = {
   "Goblet Squat":60,"Kettlebell Swing":45,"Inverted Row":0,"Plank":0,"Hanging Leg Raise":0,"Sled Push":0,"Farmer Carry":100
 };
 const DAY_PLANS = {
-  "Push":[["Barbell Bench Press",4],["Incline Dumbbell Press",3],["Overhead Press",3],["Dumbbell Lateral Raise",3],["Triceps Rope Pushdown",3],["Push-up",2]],
-  "Pull":[["Pull-up",4],["Barbell Row",4],["Face Pull",3],["Barbell Curl",3],["Hammer Curl",3]],
-  "Legs":[["Back Squat",4],["Romanian Deadlift",3],["Walking Lunge",3],["Leg Press",3],["Bulgarian Split Squat",3],["Calf Raise",3]],
   "Upper A":[["Barbell Bench Press",4],["Pull-up",3],["Incline Dumbbell Press",3],["Overhead Press",3],["Dumbbell Lateral Raise",3],["Triceps Rope Pushdown",3],["Barbell Curl",3]],
   "Upper B":[["Barbell Row",4],["Barbell Bench Press",3],["Face Pull",3],["Hammer Curl",3],["Push-up",3],["Inverted Row",3]],
   "Lower A":[["Back Squat",4],["Romanian Deadlift",3],["Walking Lunge",3],["Calf Raise",3],["Plank",3],["Hanging Leg Raise",3]],
   "Lower B":[["Deadlift",3],["Bulgarian Split Squat",3],["Leg Press",3],["Calf Raise",3],["Sled Push",3],["Farmer Carry",3],["Kettlebell Swing",3],["Goblet Squat",3]]
 };
 
-let store = JSON.parse(localStorage.getItem('ct_bulkday') || '{"sets":[]}');
-function saveStore(){ localStorage.setItem('ct_bulkday', JSON.stringify(store)); renderRecent(); }
+// ---------- Storage ----------
+let store = JSON.parse(localStorage.getItem('ct_bulkday_locked') || '{"sets":[]}');
+function saveStore(){ localStorage.setItem('ct_bulkday_locked', JSON.stringify(store)); renderRecent(); }
 
+// ---------- Helpers ----------
+function prettyDate(d){
+  const ds = d.toLocaleDateString(undefined, { weekday: 'long', year:'numeric', month:'short', day:'numeric' });
+  const t  = d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
+  return ds + ' • ' + t;
+}
 function repDefault(name){
   const rr = REP_RANGES[name] || "";
   if(rr.includes('-')){
@@ -124,18 +139,29 @@ function dayKey(){
   return d+'T'+t;
 }
 
-const daySel = document.getElementById('daySel');
-Object.keys(DAY_PLANS).forEach(k => {
-  const opt = document.createElement('option'); opt.value=k; opt.textContent=k; daySel.appendChild(opt);
-});
-daySel.value = 'Push';
-document.getElementById('dayHint').textContent = 'Sets are prefilled with typical volumes; adjust as needed.';
+// ---------- Lock to current weekday ----------
+const now = new Date();
+const dow = now.getDay(); // 0 Sun .. 6 Sat
+const todayName = SPLIT[dow] || "Rest / Conditioning";
+document.getElementById('dayLocked').value = todayName;
+document.getElementById('todayStamp').textContent = prettyDate(now);
+document.getElementById('dayHint').textContent = todayName === "Rest / Conditioning"
+  ? "No lifting scheduled today — use as cardio/mobility or pick any day next time a lifting day rolls around."
+  : "Locked to your split for today. Prefill pulls last weights where available.";
 
+// ---------- UI Build ----------
 function buildForm(){
-  const day = daySel.value;
+  const day = document.getElementById('dayLocked').value;
   const formWrap = document.getElementById('exerciseForms');
   formWrap.innerHTML = '';
-  (DAY_PLANS[day]||[]).forEach(([name,sets]) => {
+
+  const plan = DAY_PLANS[day] || [];
+  if(plan.length === 0){
+    formWrap.innerHTML = '<div class="muted">No plan for today. Enjoy recovery or conditioning.</div>';
+    document.getElementById('formArea').style.display = 'block';
+    return;
+  }
+  plan.forEach(([name,sets]) => {
     const card = document.createElement('div'); card.className='ex-card';
     const head = document.createElement('div'); head.className='ex-head';
     const title = document.createElement('div'); title.innerHTML = '<strong>'+name+'</strong> <span class="tag">'+(REP_RANGES[name]||'')+'</span>';
@@ -198,6 +224,7 @@ function prefillFromLast(){
   });
 }
 
+// ---------- Save all ----------
 function saveAll(){
   const tsBase = dayKey();
   let added = 0;
@@ -218,6 +245,7 @@ function saveAll(){
   document.getElementById('saveStatus').textContent = 'Saved '+added+' sets ✓';
 }
 
+// ---------- Recent ----------
 function renderRecent(){
   const tb = document.getElementById('recentT');
   if(!tb) return;
@@ -226,12 +254,13 @@ function renderRecent(){
   ).join('');
 }
 
+// ---------- Export ----------
 function exportJSON(){
   const blob = new Blob([JSON.stringify(store,null,2)],{type:'application/json'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'coach_tommy_bulkday.json'; a.click();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'coach_tommy_bulkday_locked.json'; a.click();
 }
 
-buildForm();
+// Init UI
 renderRecent();
 </script>
 </body>
