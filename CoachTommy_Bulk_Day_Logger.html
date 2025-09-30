@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CoachTommy — Bulk Day Logger</title>
+<style>
+  :root{--bg:#0f1115;--card:#171a21;--muted:#9aa4b2;--text:#e8edf2;--stroke:#2a3446;--accent:#7dd3fc;--ok:#6ee7b7}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  header{position:sticky;top:0;background:#12151d;border-bottom:1px solid var(--stroke);padding:12px 14px;z-index:9;display:flex;align-items:center;justify-content:space-between}
+  h1{margin:0;font-size:18px}
+  .wrap{max-width:900px;margin:0 auto;padding:14px}
+  .card{background:var(--card);border:1px solid var(--stroke);border-radius:14px;padding:14px;margin:12px 0}
+  label{display:block;color:var(--muted);font-size:12px;margin:6px 0 4px}
+  input,select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--stroke);background:#0b0e14;color:var(--text)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btn{padding:10px 12px;border-radius:10px;border:1px solid var(--stroke);background:#0e1420;color:var(--text);cursor:pointer}
+  .btn.secondary{background:#111827}
+  .btn.ok{border-color:var(--ok)}
+  .btn:hover{border-color:var(--accent)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px;border-bottom:1px solid var(--stroke);text-align:left}
+  .muted{color:var(--muted);font-size:12px}
+  .ex-card{border:1px dashed #2a3446;border-radius:12px;padding:12px;margin:10px 0}
+  .ex-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .set-row{display:grid;grid-template-columns:70px 70px 70px 1fr;gap:8px;margin:6px 0}
+  .tag{display:inline-block;padding:2px 8px;border:1px solid var(--stroke);border-radius:999px;font-size:12px;color:var(--muted);margin-left:8px}
+</style>
+</head>
+<body>
+<header>
+  <h1>CoachTommy — Bulk Day Logger</h1>
+  <div style="display:flex;gap:8px;align-items:center">
+    <a id="exportBtn" class="btn secondary" onclick="exportJSON()">Export</a>
+    <label class="muted" style="margin:0">v1</label>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>Workout Day</label>
+        <select id="daySel"></select>
+      </div>
+      <div>
+        <label>Start Time</label>
+        <input id="startTime" type="time" value="06:00">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Notes for the day (optional)</label>
+        <input id="dayNote" placeholder="Warm-up cues, targets, etc.">
+      </div>
+      <div style="display:flex;gap:8px;align-items:end">
+        <button class="btn" onclick="buildForm()">Build Today's Form</button>
+        <button class="btn secondary" onclick="prefillFromLast()">Prefill from last session</button>
+      </div>
+    </div>
+    <div class="muted" id="dayHint" style="margin-top:6px"></div>
+  </div>
+
+  <div id="formArea" class="card" style="display:none">
+    <h3 style="margin:0 0 10px">Today's Sets</h3>
+    <div id="exerciseForms"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn ok" onclick="saveAll()">Save All Sets</button>
+      <div id="saveStatus" class="muted"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin:0 0 8px">Recent (last 25 sets)</h3>
+    <table>
+      <thead><tr><th>Date</th><th>Exercise</th><th>W</th><th>R</th><th>RPE</th><th>Note</th></tr></thead>
+      <tbody id="recentT"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const REP_RANGES = {
+  "Barbell Bench Press":"6-8","Incline Dumbbell Press":"8-10","Overhead Press":"6-8","Dumbbell Lateral Raise":"12-15","Triceps Rope Pushdown":"12-15","Push-up":"AMRAP",
+  "Pull-up":"6-10","Barbell Row":"8-10","Face Pull":"12-15","Barbell Curl":"10-12","Hammer Curl":"12-15",
+  "Back Squat":"6-8","Romanian Deadlift":"8-10","Walking Lunge":"12/leg","Leg Press":"8-10","Bulgarian Split Squat":"8-10","Calf Raise":"15-20",
+  "Goblet Squat":"12","Kettlebell Swing":"15","Inverted Row":"8-10","Plank":"30-45s","Hanging Leg Raise":"30-45s","Sled Push":"Rounds","Farmer Carry":"Rounds"
+};
+const START_W = {
+  "Barbell Bench Press":175,"Incline Dumbbell Press":60,"Overhead Press":90,"Dumbbell Lateral Raise":15,"Triceps Rope Pushdown":40,"Push-up":0,
+  "Pull-up":0,"Barbell Row":90,"Face Pull":30,"Barbell Curl":65,"Hammer Curl":30,
+  "Back Squat":165,"Romanian Deadlift":145,"Walking Lunge":90,"Leg Press":200,"Bulgarian Split Squat":80,"Calf Raise":0,
+  "Goblet Squat":60,"Kettlebell Swing":45,"Inverted Row":0,"Plank":0,"Hanging Leg Raise":0,"Sled Push":0,"Farmer Carry":100
+};
+const DAY_PLANS = {
+  "Push":[["Barbell Bench Press",4],["Incline Dumbbell Press",3],["Overhead Press",3],["Dumbbell Lateral Raise",3],["Triceps Rope Pushdown",3],["Push-up",2]],
+  "Pull":[["Pull-up",4],["Barbell Row",4],["Face Pull",3],["Barbell Curl",3],["Hammer Curl",3]],
+  "Legs":[["Back Squat",4],["Romanian Deadlift",3],["Walking Lunge",3],["Leg Press",3],["Bulgarian Split Squat",3],["Calf Raise",3]],
+  "Upper A":[["Barbell Bench Press",4],["Pull-up",3],["Incline Dumbbell Press",3],["Overhead Press",3],["Dumbbell Lateral Raise",3],["Triceps Rope Pushdown",3],["Barbell Curl",3]],
+  "Upper B":[["Barbell Row",4],["Barbell Bench Press",3],["Face Pull",3],["Hammer Curl",3],["Push-up",3],["Inverted Row",3]],
+  "Lower A":[["Back Squat",4],["Romanian Deadlift",3],["Walking Lunge",3],["Calf Raise",3],["Plank",3],["Hanging Leg Raise",3]],
+  "Lower B":[["Deadlift",3],["Bulgarian Split Squat",3],["Leg Press",3],["Calf Raise",3],["Sled Push",3],["Farmer Carry",3],["Kettlebell Swing",3],["Goblet Squat",3]]
+};
+
+let store = JSON.parse(localStorage.getItem('ct_bulkday') || '{"sets":[]}');
+function saveStore(){ localStorage.setItem('ct_bulkday', JSON.stringify(store)); renderRecent(); }
+
+function repDefault(name){
+  const rr = REP_RANGES[name] || "";
+  if(rr.includes('-')){
+    const [lo,hi] = rr.split('-').map(x=>parseInt(x));
+    return Math.round((lo+hi)/2);
+  }
+  if(rr.endsWith('s') || rr==='AMRAP' || rr==='Rounds' || rr.includes('/')) return '';
+  const n = parseInt(rr); return isNaN(n) ? '' : n;
+}
+function lastWeight(name){
+  const m = store.sets.slice().reverse().find(s=>s.ex===name && s.weight);
+  return m ? m.weight : (START_W[name]||0);
+}
+function dayKey(){
+  const d = new Date().toISOString().slice(0,10);
+  const t = (document.getElementById('startTime').value || '06:00') + ':00';
+  return d+'T'+t;
+}
+
+const daySel = document.getElementById('daySel');
+Object.keys(DAY_PLANS).forEach(k => {
+  const opt = document.createElement('option'); opt.value=k; opt.textContent=k; daySel.appendChild(opt);
+});
+daySel.value = 'Push';
+document.getElementById('dayHint').textContent = 'Sets are prefilled with typical volumes; adjust as needed.';
+
+function buildForm(){
+  const day = daySel.value;
+  const formWrap = document.getElementById('exerciseForms');
+  formWrap.innerHTML = '';
+  (DAY_PLANS[day]||[]).forEach(([name,sets]) => {
+    const card = document.createElement('div'); card.className='ex-card';
+    const head = document.createElement('div'); head.className='ex-head';
+    const title = document.createElement('div'); title.innerHTML = '<strong>'+name+'</strong> <span class="tag">'+(REP_RANGES[name]||'')+'</span>';
+    const controls = document.createElement('div');
+    controls.innerHTML = '<button class="btn secondary" onclick="addSetRow(this)">＋ set</button> <button class="btn secondary" onclick="prefillExercise(this)">Prefill last</button>';
+    head.appendChild(title); head.appendChild(controls); card.appendChild(head);
+
+    const rows = document.createElement('div'); rows.className='rows';
+    for(let i=0;i<sets;i++){ rows.appendChild(makeSetRow(name)); }
+    card.appendChild(rows);
+
+    formWrap.appendChild(card);
+  });
+  document.getElementById('formArea').style.display = 'block';
+  document.getElementById('saveStatus').textContent = '';
+}
+
+function makeSetRow(name){
+  const wrap = document.createElement('div'); wrap.className='set-row';
+  const w = lastWeight(name);
+  const rep = repDefault(name);
+  wrap.innerHTML = '<input type="number" placeholder="lb" value="'+(w||'')+'">'
+                 + '<input type="number" placeholder="reps" value="'+(rep||'')+'">'
+                 + '<input type="number" step="0.5" placeholder="RPE" value="7.5">'
+                 + '<input type="text" placeholder="notes (optional)">';
+  wrap.dataset.exercise = name;
+  return wrap;
+}
+
+function addSetRow(btn){
+  const card = btn.closest('.ex-card');
+  const exName = card.querySelector('.ex-head strong').textContent;
+  card.querySelector('.rows').appendChild(makeSetRow(exName));
+}
+
+function prefillExercise(btn){
+  const card = btn.closest('.ex-card');
+  const exName = card.querySelector('.ex-head strong').textContent;
+  const last = store.sets.slice().reverse().find(s=>s.ex===exName);
+  if(!last){ alert('No previous set for '+exName); return; }
+  card.querySelectorAll('.set-row').forEach((row,i) => {
+    const ins = row.querySelectorAll('input');
+    ins[0].value = last.weight || ins[0].value;
+    ins[1].value = last.reps || ins[1].value;
+    ins[2].value = last.rpe || ins[2].value;
+  });
+}
+
+function prefillFromLast(){
+  document.querySelectorAll('.ex-card').forEach(card => {
+    const exName = card.querySelector('.ex-head strong').textContent;
+    const last = store.sets.slice().reverse().find(s=>s.ex===exName);
+    if(!last) return;
+    card.querySelectorAll('.set-row').forEach((row,i) => {
+      const ins = row.querySelectorAll('input');
+      ins[0].value = last.weight || ins[0].value;
+      ins[1].value = last.reps || ins[1].value;
+      ins[2].value = last.rpe || ins[2].value;
+    });
+  });
+}
+
+function saveAll(){
+  const tsBase = dayKey();
+  let added = 0;
+  document.querySelectorAll('.set-row').forEach((row, idx) => {
+    const ins = row.querySelectorAll('input');
+    const weight = parseFloat(ins[0].value||0);
+    const reps   = parseInt(ins[1].value||0);
+    const rpeVal = parseFloat(ins[2].value||'');
+    const note   = ins[3].value||'';
+    const ex     = row.dataset.exercise;
+    if(!ex || !weight || !reps) return;
+    const dt = new Date(new Date(tsBase).getTime() + idx*60000).toISOString();
+    store.sets.push({dt, ex, weight, reps, rpe: isNaN(rpeVal)? null : rpeVal, note});
+    added++;
+  });
+  if(added===0){ document.getElementById('saveStatus').textContent = 'Nothing to save — fill in weight & reps first.'; return; }
+  saveStore();
+  document.getElementById('saveStatus').textContent = 'Saved '+added+' sets ✓';
+}
+
+function renderRecent(){
+  const tb = document.getElementById('recentT');
+  if(!tb) return;
+  tb.innerHTML = store.sets.slice().sort((a,b)=>new Date(b.dt)-new Date(a.dt)).slice(0,25).map(s =>
+    '<tr><td>'+new Date(s.dt).toLocaleString()+'</td><td>'+s.ex+'</td><td>'+s.weight+'</td><td>'+s.reps+'</td><td>'+(s.rpe??'')+'</td><td>'+(s.note||'')+'</td></tr>'
+  ).join('');
+}
+
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(store,null,2)],{type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'coach_tommy_bulkday.json'; a.click();
+}
+
+buildForm();
+renderRecent();
+</script>
+</body>
+</html>
