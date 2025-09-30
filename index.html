@@ -2,39 +2,38 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CoachTommy — Bulk Day Logger (Locked to Weekday)</title>
+<title>CoachTommy — 12‑Week Rolling PPL (Locked)</title>
 <style>
   :root{--bg:#0f1115;--card:#171a21;--muted:#9aa4b2;--text:#e8edf2;--stroke:#2a3446;--accent:#7dd3fc;--ok:#6ee7b7}
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
   header{position:sticky;top:0;background:#12151d;border-bottom:1px solid var(--stroke);padding:12px 14px;z-index:9;display:flex;align-items:center;justify-content:space-between}
   h1{margin:0;font-size:18px}
-  .wrap{max-width:900px;margin:0 auto;padding:14px}
+  .wrap{max-width:960px;margin:0 auto;padding:14px}
   .card{background:var(--card);border:1px solid var(--stroke);border-radius:14px;padding:14px;margin:12px 0}
   label{display:block;color:var(--muted);font-size:12px;margin:6px 0 4px}
-  input,select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--stroke);background:#0b0e14;color:var(--text)}
+  input{width:100%;padding:10px;border-radius:10px;border:1px solid var(--stroke);background:#0b0e14;color:var(--text)}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .btn{padding:10px 12px;border-radius:10px;border:1px solid var(--stroke);background:#0e1420;color:var(--text);cursor:pointer}
-  .btn.secondary{background:#111827}
-  .btn.ok{border-color:var(--ok)}
-  .btn:hover{border-color:var(--accent)}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{padding:8px;border-bottom:1px solid var(--stroke);text-align:left}
+  .btn.secondary{background:#111827} .btn.ok{border-color:var(--ok)} .btn:hover{border-color:var(--accent)}
+  table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:8px;border-bottom:1px solid var(--stroke);text-align:left}
   .muted{color:var(--muted);font-size:12px}
   .ex-card{border:1px dashed #2a3446;border-radius:12px;padding:12px;margin:10px 0}
   .ex-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-  .set-row{display:grid;grid-template-columns:70px 70px 70px 1fr;gap:8px;margin:6px 0}
+  .set-row{display:grid;grid-template-columns:90px 80px 80px 1fr;gap:8px;margin:6px 0}
   .tag{display:inline-block;padding:2px 8px;border:1px solid var(--stroke);border-radius:999px;font-size:12px;color:var(--muted);margin-left:8px}
   .pill{display:inline-block;padding:2px 8px;border:1px solid var(--stroke);border-radius:999px;font-size:12px;margin-left:6px}
+  .targets{font-size:12px;color:#cbd5e1}
 </style>
 </head>
 <body>
 <header>
-  <h1>CoachTommy — Bulk Day Logger</h1>
-  <div style="display:flex;gap:10px;align-items:center">
+  <h1>CoachTommy — 12‑Week Rolling PPL</h1>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
     <span id="todayStamp" class="pill">—</span>
-    <a id="exportBtn" class="btn secondary" onclick="exportJSON()">Export</a>
-    <label class="muted" style="margin:0">v1.1</label>
+    <span id="todayWorkout" class="pill">—</span>
+    <span id="weekPill" class="pill">Week 1</span>
+    <a class="btn secondary" onclick="exportJSON()">Export</a>
+    <label class="muted" style="margin:0">v2.0</label>
   </div>
 </header>
 
@@ -42,29 +41,24 @@
   <div class="card">
     <div class="row">
       <div>
-        <label>Workout Day (locked)</label>
-        <input id="dayLocked" disabled>
-      </div>
-      <div>
         <label>Start Time</label>
         <input id="startTime" type="time" value="06:00">
       </div>
-    </div>
-    <div class="row">
       <div>
-        <label>Notes for the day (optional)</label>
+        <label>Notes (optional)</label>
         <input id="dayNote" placeholder="Warm-up cues, targets, etc.">
       </div>
-      <div style="display:flex;gap:8px;align-items:end">
-        <button class="btn" onclick="buildForm()">Build Today’s Form</button>
-        <button class="btn secondary" onclick="prefillFromLast()">Prefill from last session</button>
-      </div>
     </div>
-    <div class="muted" id="dayHint" style="margin-top:6px"></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+      <button class="btn" onclick="buildForm()">Build Today’s Form</button>
+      <button class="btn secondary" onclick="prefillFromLast()">Prefill last session</button>
+      <div id="dayHint" class="muted"></div>
+    </div>
   </div>
 
   <div id="formArea" class="card" style="display:none">
     <h3 style="margin:0 0 10px">Today’s Sets</h3>
+    <div class="targets" id="targetsHelp"></div>
     <div id="exerciseForms"></div>
     <div style="display:flex;gap:8px;margin-top:12px">
       <button class="btn ok" onclick="saveAll()">Save All Sets</button>
@@ -73,26 +67,25 @@
   </div>
 
   <div class="card">
-    <h3 style="margin:0 0 8px">Recent (last 25 sets)</h3>
+    <h3 style="margin:0 0 8px">Recent (last 30 sets)</h3>
     <table>
-      <thead><tr><th>Date</th><th>Exercise</th><th>W</th><th>R</th><th>RPE</th><th>Note</th></tr></thead>
+      <thead><tr><th>Date</th><th>Exercise</th><th>Target</th><th>W</th><th>R</th><th>RPE</th><th>Note</th></tr></thead>
       <tbody id="recentT"></tbody>
     </table>
   </div>
 </div>
 
 <script>
-// ---------- Config: Your 4‑day split ----------
-// Mon → Upper A, Tue → Lower A, Thu → Upper B, Fri → Lower B
-const SPLIT = {
-  1: "Upper A", // Monday
-  2: "Lower A", // Tuesday
-  4: "Upper B", // Thursday
-  5: "Lower B"  // Friday
-};
+// ---------- Configs ----------
+// Lifting days: Mon(1), Tue(2), Thu(4), Fri(5)
+const LIFT_DAYS = new Set([1,2,4,5]);
+// Rolling PPL cycle
+const CYCLE = ["Push","Pull","Legs"];
 
+// Rep ranges & starting weights
 const REP_RANGES = {
-  "Barbell Bench Press":"6-8","Incline Dumbbell Press":"8-10","Overhead Press":"6-8","Dumbbell Lateral Raise":"12-15","Triceps Rope Pushdown":"12-15","Push-up":"AMRAP",
+  "Barbell Bench Press":"6-8","Incline Dumbbell Press":"8-10","Overhead Press":"6-8",
+  "Dumbbell Lateral Raise":"12-15","Triceps Rope Pushdown":"12-15","Push-up":"AMRAP",
   "Pull-up":"6-10","Barbell Row":"8-10","Face Pull":"12-15","Barbell Curl":"10-12","Hammer Curl":"12-15",
   "Back Squat":"6-8","Romanian Deadlift":"8-10","Walking Lunge":"12/leg","Leg Press":"8-10","Bulgarian Split Squat":"8-10","Calf Raise":"15-20",
   "Goblet Squat":"12","Kettlebell Swing":"15","Inverted Row":"8-10","Plank":"30-45s","Hanging Leg Raise":"30-45s","Sled Push":"Rounds","Farmer Carry":"Rounds"
@@ -103,98 +96,153 @@ const START_W = {
   "Back Squat":165,"Romanian Deadlift":145,"Walking Lunge":90,"Leg Press":200,"Bulgarian Split Squat":80,"Calf Raise":0,
   "Goblet Squat":60,"Kettlebell Swing":45,"Inverted Row":0,"Plank":0,"Hanging Leg Raise":0,"Sled Push":0,"Farmer Carry":100
 };
+
+// Movement categories
+const COMPOUNDS = new Set(["Barbell Bench Press","Overhead Press","Pull-up","Barbell Row","Back Squat","Romanian Deadlift","Deadlift","Leg Press"]);
+const ISOLATIONS = new Set(["Dumbbell Lateral Raise","Triceps Rope Pushdown","Barbell Curl","Hammer Curl","Face Pull","Calf Raise","Goblet Squat","Kettlebell Swing","Walking Lunge","Bulgarian Split Squat","Inverted Row","Plank","Hanging Leg Raise","Push-up","Sled Push","Farmer Carry","Incline Dumbbell Press"]);
+
+// Day templates for PPL
 const DAY_PLANS = {
-  "Upper A":[["Barbell Bench Press",4],["Pull-up",3],["Incline Dumbbell Press",3],["Overhead Press",3],["Dumbbell Lateral Raise",3],["Triceps Rope Pushdown",3],["Barbell Curl",3]],
-  "Upper B":[["Barbell Row",4],["Barbell Bench Press",3],["Face Pull",3],["Hammer Curl",3],["Push-up",3],["Inverted Row",3]],
-  "Lower A":[["Back Squat",4],["Romanian Deadlift",3],["Walking Lunge",3],["Calf Raise",3],["Plank",3],["Hanging Leg Raise",3]],
-  "Lower B":[["Deadlift",3],["Bulgarian Split Squat",3],["Leg Press",3],["Calf Raise",3],["Sled Push",3],["Farmer Carry",3],["Kettlebell Swing",3],["Goblet Squat",3]]
+  "Push":[
+    ["Barbell Bench Press",4],["Incline Dumbbell Press",3],["Overhead Press",3],["Dumbbell Lateral Raise",3],["Triceps Rope Pushdown",3],["Push-up",2]
+  ],
+  "Pull":[
+    ["Pull-up",4],["Barbell Row",4],["Face Pull",3],["Barbell Curl",3],["Hammer Curl",3]
+  ],
+  "Legs":[
+    ["Back Squat",4],["Romanian Deadlift",3],["Walking Lunge",3],["Leg Press",3],["Bulgarian Split Squat",3],["Calf Raise",3]
+  ]
 };
 
 // ---------- Storage ----------
-let store = JSON.parse(localStorage.getItem('ct_bulkday_locked') || '{"sets":[]}');
-function saveStore(){ localStorage.setItem('ct_bulkday_locked', JSON.stringify(store)); renderRecent(); }
+let store = JSON.parse(localStorage.getItem('ct_rolling_ppl') || '{"sets":[], "start_date": null, "cycle_index": 0, "last_advance":"", "note_by_date":{}}');
+function persist(){ localStorage.setItem('ct_rolling_ppl', JSON.stringify(store)); }
 
-// ---------- Helpers ----------
+// ---------- Date helpers ----------
+function todayISO(){ return new Date().toISOString().slice(0,10); }
 function prettyDate(d){
-  const ds = d.toLocaleDateString(undefined, { weekday: 'long', year:'numeric', month:'short', day:'numeric' });
-  const t  = d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
-  return ds + ' • ' + t;
+  return d.toLocaleDateString(undefined, { weekday:'long', year:'numeric', month:'short', day:'numeric' }) + ' • ' +
+         d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
 }
-function repDefault(name){
+function getWeekIndex(){
+  // 12-week plan starting from store.start_date
+  const start = store.start_date ? new Date(store.start_date) : new Date(todayISO());
+  const today = new Date(todayISO());
+  const days = Math.floor((today - start)/(1000*60*60*24));
+  const w = Math.floor(days/7) + 1;
+  return Math.min(12, Math.max(1, w));
+}
+function mesoWeek(week){ // 1..12 -> 1..4 repeating
+  return ((week-1) % 4) + 1;
+}
+
+// ---------- PPL cycle advance only once per lifting day ----------
+const now = new Date();
+const dow = now.getDay(); // 0..6
+const isLiftDay = LIFT_DAYS.has(dow);
+if(!store.start_date){ store.start_date = todayISO(); persist(); }
+let cycleIdx = store.cycle_index || 0;
+if(isLiftDay && store.last_advance !== todayISO()){
+  // advance once per lifting day
+  cycleIdx = (cycleIdx + 1) % CYCLE.length;
+  store.cycle_index = cycleIdx;
+  store.last_advance = todayISO();
+  persist();
+}
+
+// Determine today's workout & week
+const weekIdx = getWeekIndex();
+const meso = mesoWeek(weekIdx);
+const workoutKind = isLiftDay ? CYCLE[cycleIdx] : "Rest / Conditioning";
+document.getElementById('todayStamp').textContent = prettyDate(now);
+document.getElementById('todayWorkout').textContent = workoutKind;
+document.getElementById('weekPill').textContent = 'Week ' + weekIdx + ' (W' + meso + ' of meso)';
+
+// ---------- Progression rules ----------
+function clampRepToRange(name, reps){
   const rr = REP_RANGES[name] || "";
   if(rr.includes('-')){
     const [lo,hi] = rr.split('-').map(x=>parseInt(x));
-    return Math.round((lo+hi)/2);
+    if(isNaN(lo) || isNaN(hi)) return reps;
+    return Math.min(hi, Math.max(lo, reps));
   }
-  if(rr.endsWith('s') || rr==='AMRAP' || rr==='Rounds' || rr.includes('/')) return '';
-  const n = parseInt(rr); return isNaN(n) ? '' : n;
+  return reps;
 }
+function targetFor(name, baseWeight){
+  // baseWeight fallback to START_W
+  let w = baseWeight || START_W[name] || 0;
+  let repsText = REP_RANGES[name] || "";
+  // parse numeric rep target (midpoint if range)
+  let baseReps = null;
+  if(repsText.includes('-')){ const [lo,hi] = repsText.split('-').map(x=>parseInt(x)); baseReps = Math.round((lo+hi)/2); }
+  else if(repsText.endsWith('s') || repsText==='AMRAP' || repsText==='Rounds' || repsText.includes('/')){ baseReps = null; }
+  else { const n=parseInt(repsText); baseReps = isNaN(n)? null : n; }
+
+  const m = meso; // 1..4
+  if(COMPOUNDS.has(name)){
+    const mult = (m===1?1 : m===2?1.025 : m===3?1.05 : 0.9);
+    w = Math.round(w * mult / 2.5) * 2.5; // round to 2.5 lb plates
+  }else if(ISOLATIONS.has(name)){
+    if(m===2 && baseReps!=null) baseReps += 1;
+    if(m===3 && baseReps!=null) baseReps += 2;
+    if(m===4){
+      w = Math.round(w * 0.95 / 2.5) * 2.5;
+      if(baseReps!=null) baseReps = Math.max(1, baseReps - 2);
+    }
+    if(baseReps!=null) baseReps = clampRepToRange(name, baseReps);
+  }
+  return {weight: w, reps: baseReps, text: REP_RANGES[name] || ""};
+}
+
+// ---------- Build UI ----------
 function lastWeight(name){
   const m = store.sets.slice().reverse().find(s=>s.ex===name && s.weight);
   return m ? m.weight : (START_W[name]||0);
 }
-function dayKey(){
-  const d = new Date().toISOString().slice(0,10);
-  const t = (document.getElementById('startTime').value || '06:00') + ':00';
-  return d+'T'+t;
-}
 
-// ---------- Lock to current weekday ----------
-const now = new Date();
-const dow = now.getDay(); // 0 Sun .. 6 Sat
-const todayName = SPLIT[dow] || "Rest / Conditioning";
-document.getElementById('dayLocked').value = todayName;
-document.getElementById('todayStamp').textContent = prettyDate(now);
-document.getElementById('dayHint').textContent = todayName === "Rest / Conditioning"
-  ? "No lifting scheduled today — use as cardio/mobility or pick any day next time a lifting day rolls around."
-  : "Locked to your split for today. Prefill pulls last weights where available.";
-
-// ---------- UI Build ----------
-function buildForm(){
-  const day = document.getElementById('dayLocked').value;
-  const formWrap = document.getElementById('exerciseForms');
-  formWrap.innerHTML = '';
-
-  const plan = DAY_PLANS[day] || [];
-  if(plan.length === 0){
-    formWrap.innerHTML = '<div class="muted">No plan for today. Enjoy recovery or conditioning.</div>';
-    document.getElementById('formArea').style.display = 'block';
-    return;
-  }
-  plan.forEach(([name,sets]) => {
-    const card = document.createElement('div'); card.className='ex-card';
-    const head = document.createElement('div'); head.className='ex-head';
-    const title = document.createElement('div'); title.innerHTML = '<strong>'+name+'</strong> <span class="tag">'+(REP_RANGES[name]||'')+'</span>';
-    const controls = document.createElement('div');
-    controls.innerHTML = '<button class="btn secondary" onclick="addSetRow(this)">＋ set</button> <button class="btn secondary" onclick="prefillExercise(this)">Prefill last</button>';
-    head.appendChild(title); head.appendChild(controls); card.appendChild(head);
-
-    const rows = document.createElement('div'); rows.className='rows';
-    for(let i=0;i<sets;i++){ rows.appendChild(makeSetRow(name)); }
-    card.appendChild(rows);
-
-    formWrap.appendChild(card);
-  });
-  document.getElementById('formArea').style.display = 'block';
-  document.getElementById('saveStatus').textContent = '';
-}
-
-function makeSetRow(name){
+function makeSetRow(name, t){
   const wrap = document.createElement('div'); wrap.className='set-row';
-  const w = lastWeight(name);
-  const rep = repDefault(name);
-  wrap.innerHTML = '<input type="number" placeholder="lb" value="'+(w||'')+'">'
-                 + '<input type="number" placeholder="reps" value="'+(rep||'')+'">'
-                 + '<input type="number" step="0.5" placeholder="RPE" value="7.5">'
+  wrap.innerHTML = '<input type="number" placeholder="lb" value="'+(t.weight||'')+'">'
+                 + '<input type="number" placeholder="reps" value="'+(t.reps??'')+'">'
+                 + '<input type="number" step="0.5" placeholder="RPE" value="'+(t.reps? '7.5':'7')+'">'
                  + '<input type="text" placeholder="notes (optional)">';
   wrap.dataset.exercise = name;
+  wrap.dataset.target = (t.weight||0)+' lb @ '+(t.reps??(t.text||''));
   return wrap;
+}
+
+function buildForm(){
+  const formWrap = document.getElementById('exerciseForms');
+  formWrap.innerHTML = '';
+  const plan = DAY_PLANS[workoutKind] || [];
+  if(plan.length===0){
+    formWrap.innerHTML = '<div class="muted">No lifting plan today. Mobility/conditioning recommended.</div>';
+    document.getElementById('formArea').style.display='block';
+    return;
+  }
+  plan.forEach(([name, sets]) => {
+    const card = document.createElement('div'); card.className='ex-card';
+    const t = targetFor(name, lastWeight(name));
+    const head = document.createElement('div'); head.className='ex-head';
+    const title = document.createElement('div'); title.innerHTML = '<strong>'+name+'</strong> <span class="tag">'+(REP_RANGES[name]||'')+'</span> <span class="tag">Target: '+(t.weight||0)+' lb @ '+(t.reps??(t.text||''))+'</span>';
+    const controls = document.createElement('div'); controls.innerHTML = '<button class="btn secondary" onclick="addSetRow(this)">＋ set</button> <button class="btn secondary" onclick="prefillExercise(this)">Prefill last</button>';
+    head.appendChild(title); head.appendChild(controls); card.appendChild(head);
+    const rows = document.createElement('div'); rows.className='rows';
+    for(let i=0;i<sets;i++){ rows.appendChild(makeSetRow(name, t)); }
+    card.appendChild(rows);
+    formWrap.appendChild(card);
+  });
+  document.getElementById('targetsHelp').textContent = 'Compounds: W2 ≈ +2.5%, W3 ≈ +5%, W4 deload ≈ −10%. Isolations: add reps in W2/W3, deload small in W4.';
+  document.getElementById('formArea').style.display='block';
+  document.getElementById('saveStatus').textContent='';
+  document.getElementById('dayHint').textContent = 'Week '+weekIdx+' • Mesocycle week '+meso+' • Rolling '+workoutKind+'.';
 }
 
 function addSetRow(btn){
   const card = btn.closest('.ex-card');
-  const exName = card.querySelector('.ex-head strong').textContent;
-  card.querySelector('.rows').appendChild(makeSetRow(exName));
+  const name = card.querySelector('.ex-head strong').textContent;
+  const t = targetFor(name, lastWeight(name));
+  card.querySelector('.rows').appendChild(makeSetRow(name, t));
 }
 
 function prefillExercise(btn){
@@ -202,7 +250,7 @@ function prefillExercise(btn){
   const exName = card.querySelector('.ex-head strong').textContent;
   const last = store.sets.slice().reverse().find(s=>s.ex===exName);
   if(!last){ alert('No previous set for '+exName); return; }
-  card.querySelectorAll('.set-row').forEach((row,i) => {
+  card.querySelectorAll('.set-row').forEach(row => {
     const ins = row.querySelectorAll('input');
     ins[0].value = last.weight || ins[0].value;
     ins[1].value = last.reps || ins[1].value;
@@ -215,7 +263,7 @@ function prefillFromLast(){
     const exName = card.querySelector('.ex-head strong').textContent;
     const last = store.sets.slice().reverse().find(s=>s.ex===exName);
     if(!last) return;
-    card.querySelectorAll('.set-row').forEach((row,i) => {
+    card.querySelectorAll('.set-row').forEach(row => {
       const ins = row.querySelectorAll('input');
       ins[0].value = last.weight || ins[0].value;
       ins[1].value = last.reps || ins[1].value;
@@ -224,10 +272,15 @@ function prefillFromLast(){
   });
 }
 
-// ---------- Save all ----------
+// Save
+function dayKey(){
+  const d = todayISO();
+  const t = (document.getElementById('startTime').value || '06:00') + ':00';
+  return d+'T'+t;
+}
 function saveAll(){
   const tsBase = dayKey();
-  let added = 0;
+  let added=0;
   document.querySelectorAll('.set-row').forEach((row, idx) => {
     const ins = row.querySelectorAll('input');
     const weight = parseFloat(ins[0].value||0);
@@ -236,31 +289,35 @@ function saveAll(){
     const note   = ins[3].value||'';
     const ex     = row.dataset.exercise;
     if(!ex || !weight || !reps) return;
-    const dt = new Date(new Date(tsBase).getTime() + idx*60000).toISOString();
-    store.sets.push({dt, ex, weight, reps, rpe: isNaN(rpeVal)? null : rpeVal, note});
+    const dt = new Date(new Date(tsBase).getTime()+idx*60000).toISOString();
+    store.sets.push({dt, ex, weight, reps, rpe: isNaN(rpeVal)? null : rpeVal, note, target: row.dataset.target, week: weekIdx, meso: meso, kind: workoutKind});
     added++;
   });
-  if(added===0){ document.getElementById('saveStatus').textContent = 'Nothing to save — fill in weight & reps first.'; return; }
-  saveStore();
-  document.getElementById('saveStatus').textContent = 'Saved '+added+' sets ✓';
+  if(added===0){ document.getElementById('saveStatus').textContent='Nothing to save — fill in weight & reps first.'; return; }
+  persist(); renderRecent(); document.getElementById('saveStatus').textContent='Saved '+added+' sets ✓';
 }
 
-// ---------- Recent ----------
 function renderRecent(){
   const tb = document.getElementById('recentT');
-  if(!tb) return;
-  tb.innerHTML = store.sets.slice().sort((a,b)=>new Date(b.dt)-new Date(a.dt)).slice(0,25).map(s =>
-    '<tr><td>'+new Date(s.dt).toLocaleString()+'</td><td>'+s.ex+'</td><td>'+s.weight+'</td><td>'+s.reps+'</td><td>'+(s.rpe??'')+'</td><td>'+(s.note||'')+'</td></tr>'
+  tb.innerHTML = store.sets.slice().sort((a,b)=>new Date(b.dt)-new Date(a.dt)).slice(0,30).map(s =>
+    '<tr><td>'+new Date(s.dt).toLocaleString()+'</td><td>'+s.ex+'</td><td>'+ (s.target||'') +'</td><td>'+s.weight+'</td><td>'+s.reps+'</td><td>'+(s.rpe??'')+'</td><td>'+(s.note||'')+'</td></tr>'
   ).join('');
 }
 
-// ---------- Export ----------
+// Export
 function exportJSON(){
   const blob = new Blob([JSON.stringify(store,null,2)],{type:'application/json'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'coach_tommy_bulkday_locked.json'; a.click();
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='coach_tommy_rolling_ppl.json'; a.click();
 }
 
-// Init UI
+// Init header helpers
+document.getElementById('dayNote').addEventListener('change', e => {
+  store.note_by_date[todayISO()] = e.target.value; persist();
+});
+const existingNote = store.note_by_date[todayISO()] || ''; document.getElementById('dayNote').value = existingNote;
+
+// Build if lifting day
+if(isLiftDay){ buildForm(); } else { document.getElementById('dayHint').textContent = 'Rest/conditioning day — cycle will advance next lifting day.'; }
 renderRecent();
 </script>
 </body>
