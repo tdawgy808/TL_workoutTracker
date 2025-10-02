@@ -36,7 +36,7 @@
     <span id="todayWorkout" class="pill">—</span>
     <span id="weekPill" class="pill">Week 1</span>
     <a class="btn secondary" onclick="exportJSON()">Export</a>
-    <label class="muted" style="margin:0">v2.3 (Cardio tile)</label>
+    <label class="muted" style="margin:0">v2.3.1 (Cardio fix)</label>
   </div>
 </header>
 
@@ -136,8 +136,8 @@ const DAY_PLANS = {
 };
 
 // ---------- Storage & helpers ----------
-let store = JSON.parse(localStorage.getItem('ct_fitbod_only_5day_cardio') || '{"sets":[], "start_date": null, "note_by_date":{}}');
-function persist(){ localStorage.setItem('ct_fitbod_only_5day_cardio', JSON.stringify(store)); }
+let store = JSON.parse(localStorage.getItem('ct_fitbod_only_5day_cardio_fix') || '{"sets":[], "start_date": null, "note_by_date":{}}');
+function persist(){ localStorage.setItem('ct_fitbod_only_5day_cardio_fix', JSON.stringify(store)); }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 function prettyDate(d){
   return d.toLocaleDateString(undefined, { weekday:'long', year:'numeric', month:'short', day:'numeric' }) + ' • ' +
@@ -190,7 +190,7 @@ function targetFor(name, meso){
   return {weight:w, reps:baseReps, text: rr};
 }
 
-// Today
+// ---------- Today (single declaration) ----------
 const now = new Date();
 const dow = now.getDay();
 if(!store.start_date){ store.start_date = todayISO(); persist(); }
@@ -201,7 +201,7 @@ document.getElementById('todayStamp').textContent = prettyDate(now);
 document.getElementById('todayWorkout').textContent = todayName;
 document.getElementById('weekPill').textContent = 'Week '+weekIdx+' (W'+meso+' of meso)';
 
-// Build UI
+// ---------- Build UI ----------
 function makeSetRow(name, t){
   const wrap = document.createElement('div'); wrap.className='set-row';
   wrap.innerHTML = '<input type="number" placeholder="lb" value="'+(t.weight||'')+'">'
@@ -324,15 +324,14 @@ function renderRecent(){
 // Export
 function exportJSON(){
   const blob = new Blob([JSON.stringify(store,null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='coach_tommy_fitbod_only_5day_cardio.json'; a.click();
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='coach_tommy_fitbod_only_5day_cardio_fix.json'; a.click();
 }
 
-// Init
+// Init (single pass)
 if(!store.start_date){ store.start_date = todayISO(); persist(); }
-const now = new Date(); const dow = now.getDay();
 document.getElementById('todayStamp').textContent = prettyDate(now);
 document.getElementById('todayWorkout').textContent = SPLIT[dow] || "Rest / Conditioning";
-document.getElementById('weekPill').textContent = 'Week '+getWeekIndex()+' (W'+mesoWeek(getWeekIndex())+' of meso)';
+document.getElementById('weekPill').textContent = 'Week '+weekIdx+' (W'+meso+' of meso)';
 const existingNote = store.note_by_date && store.note_by_date[todayISO()] || ''; document.getElementById('dayNote').value = existingNote;
 document.getElementById('dayNote').addEventListener('change', e => { if(!store.note_by_date) store.note_by_date={}; store.note_by_date[todayISO()] = e.target.value; persist(); });
 if(LIFT_DAYS.has(dow)){ buildForm(); } else { document.getElementById('dayHint').textContent = 'Rest/conditioning day — your 5‑day plan runs Mon–Fri.'; }
