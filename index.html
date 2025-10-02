@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CoachTommy — 12‑Week Rolling PPL (Locked)</title>
+<title>CoachTommy — 12‑Week (Fitbod‑Only) Locked Split</title>
 <style>
   :root{--bg:#0f1115;--card:#171a21;--muted:#9aa4b2;--text:#e8edf2;--stroke:#2a3446;--accent:#7dd3fc;--ok:#6ee7b7}
   *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-  header{position:sticky;top:0;background:#12151d;border-bottom:1px solid var(--stroke);padding:12px 14px;z-index:9;display:flex;align-items:center;justify-content:space-between}
+  header{position:sticky;top:0;background:#12151d;border-bottom:1px solid var(--stroke);padding:12px 14px;z-index:9;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap}
   h1{margin:0;font-size:18px}
   .wrap{max-width:960px;margin:0 auto;padding:14px}
   .card{background:var(--card);border:1px solid var(--stroke);border-radius:14px;padding:14px;margin:12px 0}
@@ -18,7 +18,7 @@
   table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:8px;border-bottom:1px solid var(--stroke);text-align:left}
   .muted{color:var(--muted);font-size:12px}
   .ex-card{border:1px dashed #2a3446;border-radius:12px;padding:12px;margin:10px 0}
-  .ex-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .ex-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap}
   .set-row{display:grid;grid-template-columns:90px 80px 80px 1fr;gap:8px;margin:6px 0}
   .tag{display:inline-block;padding:2px 8px;border:1px solid var(--stroke);border-radius:999px;font-size:12px;color:var(--muted);margin-left:8px}
   .pill{display:inline-block;padding:2px 8px;border:1px solid var(--stroke);border-radius:999px;font-size:12px;margin-left:6px}
@@ -27,13 +27,13 @@
 </head>
 <body>
 <header>
-  <h1>CoachTommy — 12‑Week Rolling PPL</h1>
+  <h1>CoachTommy — 12‑Week (Fitbod‑Only)</h1>
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
     <span id="todayStamp" class="pill">—</span>
     <span id="todayWorkout" class="pill">—</span>
     <span id="weekPill" class="pill">Week 1</span>
     <a class="btn secondary" onclick="exportJSON()">Export</a>
-    <label class="muted" style="margin:0">v2.0</label>
+    <label class="muted" style="margin:0">v2.1 (Fitbod‑only)</label>
   </div>
 </header>
 
@@ -49,7 +49,7 @@
         <input id="dayNote" placeholder="Warm-up cues, targets, etc.">
       </div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+    <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
       <button class="btn" onclick="buildForm()">Build Today’s Form</button>
       <button class="btn secondary" onclick="prefillFromLast()">Prefill last session</button>
       <div id="dayHint" class="muted"></div>
@@ -60,7 +60,7 @@
     <h3 style="margin:0 0 10px">Today’s Sets</h3>
     <div class="targets" id="targetsHelp"></div>
     <div id="exerciseForms"></div>
-    <div style="display:flex;gap:8px;margin-top:12px">
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
       <button class="btn ok" onclick="saveAll()">Save All Sets</button>
       <div id="saveStatus" class="muted"></div>
     </div>
@@ -77,127 +77,118 @@
 
 <script>
 // ---------- Configs ----------
-// Lifting days: Mon(1), Tue(2), Thu(4), Fri(5)
+// Lifting days: Mon(1), Tue(2), Thu(4), Fri(5). Other days don't advance.
 const LIFT_DAYS = new Set([1,2,4,5]);
-// Rolling PPL cycle
-const CYCLE = ["Push","Pull","Legs"];
 
-// Rep ranges & starting weights
-const REP_RANGES = {
-  "Barbell Bench Press":"6-8","Incline Dumbbell Press":"8-10","Overhead Press":"6-8",
-  "Dumbbell Lateral Raise":"12-15","Triceps Rope Pushdown":"12-15","Push-up":"AMRAP",
-  "Pull-up":"6-10","Barbell Row":"8-10","Face Pull":"12-15","Barbell Curl":"10-12","Hammer Curl":"12-15",
-  "Back Squat":"6-8","Romanian Deadlift":"8-10","Walking Lunge":"12/leg","Leg Press":"8-10","Bulgarian Split Squat":"8-10","Calf Raise":"15-20",
-  "Goblet Squat":"12","Kettlebell Swing":"15","Inverted Row":"8-10","Plank":"30-45s","Hanging Leg Raise":"30-45s","Sled Push":"Rounds","Farmer Carry":"Rounds"
+// Lock to weekday split
+const SPLIT = {
+  1: "Upper A", // Monday
+  2: "Lower A", // Tuesday
+  4: "Upper B", // Thursday
+  5: "Lower B"  // Friday
 };
+
+// Rep ranges (same as before, only including Fitbod-present moves)
+const REP_RANGES = {
+  "Barbell Bench Press":"6-8","Dumbbell Lateral Raise":"12-15","Barbell Curl":"10-12",
+  "Plank":"30-45s","Hanging Leg Raise":"30-45s",
+  "Back Squat":"6-8","Romanian Deadlift":"8-10","Walking Lunge":"12/leg","Calf Raise":"15-20",
+  "Deadlift":"4-6","Bulgarian Split Squat":"8-10","Kettlebell Swing":"15"
+};
+
+// Starting weights (carry from your earlier setup; updated only for present moves)
 const START_W = {
-  "Barbell Bench Press":175,"Incline Dumbbell Press":60,"Overhead Press":90,"Dumbbell Lateral Raise":15,"Triceps Rope Pushdown":40,"Push-up":0,
-  "Pull-up":0,"Barbell Row":90,"Face Pull":30,"Barbell Curl":65,"Hammer Curl":30,
-  "Back Squat":165,"Romanian Deadlift":145,"Walking Lunge":90,"Leg Press":200,"Bulgarian Split Squat":80,"Calf Raise":0,
-  "Goblet Squat":60,"Kettlebell Swing":45,"Inverted Row":0,"Plank":0,"Hanging Leg Raise":0,"Sled Push":0,"Farmer Carry":100
+  "Barbell Bench Press":175,"Dumbbell Lateral Raise":15,"Barbell Curl":65,
+  "Back Squat":165,"Romanian Deadlift":145,"Walking Lunge":90,"Calf Raise":0,
+  "Deadlift":205,"Bulgarian Split Squat":80,"Kettlebell Swing":45,
+  "Plank":0,"Hanging Leg Raise":0
 };
 
 // Movement categories
-const COMPOUNDS = new Set(["Barbell Bench Press","Overhead Press","Pull-up","Barbell Row","Back Squat","Romanian Deadlift","Deadlift","Leg Press"]);
-const ISOLATIONS = new Set(["Dumbbell Lateral Raise","Triceps Rope Pushdown","Barbell Curl","Hammer Curl","Face Pull","Calf Raise","Goblet Squat","Kettlebell Swing","Walking Lunge","Bulgarian Split Squat","Inverted Row","Plank","Hanging Leg Raise","Push-up","Sled Push","Farmer Carry","Incline Dumbbell Press"]);
+const COMPOUNDS = new Set(["Barbell Bench Press","Back Squat","Romanian Deadlift","Deadlift"]);
+const ISOLATIONS = new Set(["Dumbbell Lateral Raise","Barbell Curl","Calf Raise","Bulgarian Split Squat","Kettlebell Swing","Walking Lunge","Plank","Hanging Leg Raise"]);
 
-// Day templates for PPL
+// Fitbod-only day templates
 const DAY_PLANS = {
-  "Push":[
-    ["Barbell Bench Press",4],["Incline Dumbbell Press",3],["Overhead Press",3],["Dumbbell Lateral Raise",3],["Triceps Rope Pushdown",3],["Push-up",2]
+  "Upper A":[
+    ["Barbell Bench Press",4],["Dumbbell Lateral Raise",3],["Barbell Curl",3],["Plank",3],["Hanging Leg Raise",3]
   ],
-  "Pull":[
-    ["Pull-up",4],["Barbell Row",4],["Face Pull",3],["Barbell Curl",3],["Hammer Curl",3]
+  "Lower A":[
+    ["Back Squat",4],["Romanian Deadlift",3],["Walking Lunge",3],["Calf Raise",3]
   ],
-  "Legs":[
-    ["Back Squat",4],["Romanian Deadlift",3],["Walking Lunge",3],["Leg Press",3],["Bulgarian Split Squat",3],["Calf Raise",3]
+  "Upper B":[
+    ["Barbell Bench Press",3],["Dumbbell Lateral Raise",3],["Barbell Curl",3],["Plank",3]
+  ],
+  "Lower B":[
+    ["Deadlift",3],["Bulgarian Split Squat",3],["Kettlebell Swing",3],["Calf Raise",3],["Walking Lunge",2]
   ]
 };
 
-// ---------- Storage ----------
-let store = JSON.parse(localStorage.getItem('ct_rolling_ppl') || '{"sets":[], "start_date": null, "cycle_index": 0, "last_advance":"", "note_by_date":{}}');
-function persist(){ localStorage.setItem('ct_rolling_ppl', JSON.stringify(store)); }
+// ---------- 12-week progression (4-week meso x3) ----------
+let store = JSON.parse(localStorage.getItem('ct_fitbod_only_12wk') || '{"sets":[], "start_date": null, "last_advance": "", "note_by_date":{}}');
+function persist(){ localStorage.setItem('ct_fitbod_only_12wk', JSON.stringify(store)); }
 
-// ---------- Date helpers ----------
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 function prettyDate(d){
   return d.toLocaleDateString(undefined, { weekday:'long', year:'numeric', month:'short', day:'numeric' }) + ' • ' +
          d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
 }
 function getWeekIndex(){
-  // 12-week plan starting from store.start_date
   const start = store.start_date ? new Date(store.start_date) : new Date(todayISO());
   const today = new Date(todayISO());
   const days = Math.floor((today - start)/(1000*60*60*24));
   const w = Math.floor(days/7) + 1;
   return Math.min(12, Math.max(1, w));
 }
-function mesoWeek(week){ // 1..12 -> 1..4 repeating
-  return ((week-1) % 4) + 1;
-}
+function mesoWeek(week){ return ((week-1)%4)+1; }
 
-// ---------- PPL cycle advance only once per lifting day ----------
+// Today
 const now = new Date();
-const dow = now.getDay(); // 0..6
-const isLiftDay = LIFT_DAYS.has(dow);
+const dow = now.getDay();
+const todayName = SPLIT[dow] || "Rest / Conditioning";
 if(!store.start_date){ store.start_date = todayISO(); persist(); }
-let cycleIdx = store.cycle_index || 0;
-if(isLiftDay && store.last_advance !== todayISO()){
-  // advance once per lifting day
-  cycleIdx = (cycleIdx + 1) % CYCLE.length;
-  store.cycle_index = cycleIdx;
-  store.last_advance = todayISO();
-  persist();
-}
 
-// Determine today's workout & week
-const weekIdx = getWeekIndex();
-const meso = mesoWeek(weekIdx);
-const workoutKind = isLiftDay ? CYCLE[cycleIdx] : "Rest / Conditioning";
 document.getElementById('todayStamp').textContent = prettyDate(now);
-document.getElementById('todayWorkout').textContent = workoutKind;
-document.getElementById('weekPill').textContent = 'Week ' + weekIdx + ' (W' + meso + ' of meso)';
+document.getElementById('todayWorkout').textContent = todayName;
+const weekIdx = getWeekIndex(); const meso = mesoWeek(weekIdx);
+document.getElementById('weekPill').textContent = 'Week '+weekIdx+' (W'+meso+' of meso)';
 
-// ---------- Progression rules ----------
+// Only advance target loads once per lifting day via meso rules (targets are computed on build)
 function clampRepToRange(name, reps){
   const rr = REP_RANGES[name] || "";
   if(rr.includes('-')){
     const [lo,hi] = rr.split('-').map(x=>parseInt(x));
-    if(isNaN(lo) || isNaN(hi)) return reps;
+    if(isNaN(lo)||isNaN(hi)) return reps;
     return Math.min(hi, Math.max(lo, reps));
   }
   return reps;
 }
-function targetFor(name, baseWeight){
-  // baseWeight fallback to START_W
-  let w = baseWeight || START_W[name] || 0;
-  let repsText = REP_RANGES[name] || "";
-  // parse numeric rep target (midpoint if range)
+function lastWeight(name){
+  const m = store.sets.slice().reverse().find(s=>s.ex===name && s.weight);
+  return m ? m.weight : (START_W[name]||0);
+}
+function targetFor(name){
+  let w = lastWeight(name);
+  if(!w) w = START_W[name]||0;
+  const rr = REP_RANGES[name] || "";
   let baseReps = null;
-  if(repsText.includes('-')){ const [lo,hi] = repsText.split('-').map(x=>parseInt(x)); baseReps = Math.round((lo+hi)/2); }
-  else if(repsText.endsWith('s') || repsText==='AMRAP' || repsText==='Rounds' || repsText.includes('/')){ baseReps = null; }
-  else { const n=parseInt(repsText); baseReps = isNaN(n)? null : n; }
+  if(rr.includes('-')){ const [lo,hi]=rr.split('-').map(x=>parseInt(x)); baseReps = Math.round((lo+hi)/2); }
+  else if(rr.endsWith('s') || rr==='AMRAP' || rr==='Rounds' || rr.includes('/')){ baseReps = null; }
+  else { const n=parseInt(rr); baseReps = isNaN(n)? null:n; }
 
-  const m = meso; // 1..4
   if(COMPOUNDS.has(name)){
-    const mult = (m===1?1 : m===2?1.025 : m===3?1.05 : 0.9);
-    w = Math.round(w * mult / 2.5) * 2.5; // round to 2.5 lb plates
-  }else if(ISOLATIONS.has(name)){
-    if(m===2 && baseReps!=null) baseReps += 1;
-    if(m===3 && baseReps!=null) baseReps += 2;
-    if(m===4){
+    const mult = (meso===1?1 : meso===2?1.025 : meso===3?1.05 : 0.9);
+    w = Math.round(w * mult / 2.5) * 2.5;
+  }else{
+    if(meso===2 && baseReps!=null) baseReps += 1;
+    if(meso===3 && baseReps!=null) baseReps += 2;
+    if(meso===4){
       w = Math.round(w * 0.95 / 2.5) * 2.5;
       if(baseReps!=null) baseReps = Math.max(1, baseReps - 2);
     }
     if(baseReps!=null) baseReps = clampRepToRange(name, baseReps);
   }
-  return {weight: w, reps: baseReps, text: REP_RANGES[name] || ""};
-}
-
-// ---------- Build UI ----------
-function lastWeight(name){
-  const m = store.sets.slice().reverse().find(s=>s.ex===name && s.weight);
-  return m ? m.weight : (START_W[name]||0);
+  return {weight:w, reps:baseReps, text: rr};
 }
 
 function makeSetRow(name, t){
@@ -214,15 +205,14 @@ function makeSetRow(name, t){
 function buildForm(){
   const formWrap = document.getElementById('exerciseForms');
   formWrap.innerHTML = '';
-  const plan = DAY_PLANS[workoutKind] || [];
+  const plan = DAY_PLANS[todayName] || [];
   if(plan.length===0){
     formWrap.innerHTML = '<div class="muted">No lifting plan today. Mobility/conditioning recommended.</div>';
-    document.getElementById('formArea').style.display='block';
-    return;
+    document.getElementById('formArea').style.display='block'; return;
   }
   plan.forEach(([name, sets]) => {
     const card = document.createElement('div'); card.className='ex-card';
-    const t = targetFor(name, lastWeight(name));
+    const t = targetFor(name);
     const head = document.createElement('div'); head.className='ex-head';
     const title = document.createElement('div'); title.innerHTML = '<strong>'+name+'</strong> <span class="tag">'+(REP_RANGES[name]||'')+'</span> <span class="tag">Target: '+(t.weight||0)+' lb @ '+(t.reps??(t.text||''))+'</span>';
     const controls = document.createElement('div'); controls.innerHTML = '<button class="btn secondary" onclick="addSetRow(this)">＋ set</button> <button class="btn secondary" onclick="prefillExercise(this)">Prefill last</button>';
@@ -232,16 +222,16 @@ function buildForm(){
     card.appendChild(rows);
     formWrap.appendChild(card);
   });
-  document.getElementById('targetsHelp').textContent = 'Compounds: W2 ≈ +2.5%, W3 ≈ +5%, W4 deload ≈ −10%. Isolations: add reps in W2/W3, deload small in W4.';
+  document.getElementById('targetsHelp').textContent = 'Compounds: W2 ≈ +2.5%, W3 ≈ +5%, W4 deload ≈ −10%. Isolations: +reps in W2/W3, small deload in W4.';
   document.getElementById('formArea').style.display='block';
   document.getElementById('saveStatus').textContent='';
-  document.getElementById('dayHint').textContent = 'Week '+weekIdx+' • Mesocycle week '+meso+' • Rolling '+workoutKind+'.';
+  document.getElementById('dayHint').textContent = 'Week '+weekIdx+' • Mesocycle week '+meso+' • '+todayName+' (Fitbod‑only).';
 }
 
 function addSetRow(btn){
   const card = btn.closest('.ex-card');
   const name = card.querySelector('.ex-head strong').textContent;
-  const t = targetFor(name, lastWeight(name));
+  const t = targetFor(name);
   card.querySelector('.rows').appendChild(makeSetRow(name, t));
 }
 
@@ -290,7 +280,7 @@ function saveAll(){
     const ex     = row.dataset.exercise;
     if(!ex || !weight || !reps) return;
     const dt = new Date(new Date(tsBase).getTime()+idx*60000).toISOString();
-    store.sets.push({dt, ex, weight, reps, rpe: isNaN(rpeVal)? null : rpeVal, note, target: row.dataset.target, week: weekIdx, meso: meso, kind: workoutKind});
+    store.sets.push({dt, ex, weight, reps, rpe: isNaN(rpeVal)? null : rpeVal, note, target: row.dataset.target, week: weekIdx, meso: meso, kind: todayName});
     added++;
   });
   if(added===0){ document.getElementById('saveStatus').textContent='Nothing to save — fill in weight & reps first.'; return; }
@@ -307,17 +297,15 @@ function renderRecent(){
 // Export
 function exportJSON(){
   const blob = new Blob([JSON.stringify(store,null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='coach_tommy_rolling_ppl.json'; a.click();
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='coach_tommy_fitbod_only_12wk.json'; a.click();
 }
 
-// Init header helpers
-document.getElementById('dayNote').addEventListener('change', e => {
-  store.note_by_date[todayISO()] = e.target.value; persist();
-});
+// Init
+document.getElementById('dayNote').addEventListener('change', e => { store.note_by_date[todayISO()] = e.target.value; persist(); });
 const existingNote = store.note_by_date[todayISO()] || ''; document.getElementById('dayNote').value = existingNote;
 
-// Build if lifting day
-if(isLiftDay){ buildForm(); } else { document.getElementById('dayHint').textContent = 'Rest/conditioning day — cycle will advance next lifting day.'; }
+document.getElementById('todayStamp').textContent = prettyDate(now);
+if(SPLIT[dow]){ buildForm(); } else { document.getElementById('dayHint').textContent = 'Rest/conditioning day — come back on your lifting days (Mon/Tue/Thu/Fri).'; }
 renderRecent();
 </script>
 </body>
