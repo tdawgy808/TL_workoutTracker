@@ -26,8 +26,8 @@
   .targets{font-size:12px;color:#cbd5e1}
   .cardio-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
   .checkbox-line{display:flex;align-items:center;gap:10px}
-  .set-row.done{opacity:.55}
-  .set-check{width:18px;height:18px;cursor:pointer}
+.set-row.done{opacity:.55}
+.set-check{width:18px;height:18px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -204,10 +204,14 @@ document.getElementById('todayWorkout').textContent = todayName;
 document.getElementById('weekPill').textContent = 'Week '+weekIdx+' (W'+meso+' of meso)';
 
 // ---------- Build UI ----------
-function makeSetRow(name, t){ const wrap = document.createElement('div'); wrap.className='set-row'; wrap.innerHTML = '<input type="checkbox" class="set-check" aria-label="Complete set">' + '<input type="number" placeholder="lb" value="'+(t.weight||'')+'">'
+function makeSetRow(name, t){
+  const wrap = document.createElement('div'); wrap.className='set-row';
+  wrap.innerHTML = '<input type=\"checkbox\" class=\"set-check\" aria-label=\"Complete set\">' + '<input type="number" placeholder="lb" value="'+(t.weight||'')+'">'
                  + '<input type="number" placeholder="reps" value="'+(t.reps??'')+'">'
                  + '<input type="number" step="0.5" placeholder="RPE" value="'+(t.reps? '7.5':'7')+'">'
-                 + '<input type="text" placeholder="notes (optional)">'; const cb = wrap.querySelector('.set-check'); cb.addEventListener('change', ()=> wrap.classList.toggle('done', cb.checked)); wrap.dataset.exercise = name;
+                 ';
+  wrap.dataset.exercise = name;
+  const _cb = wrap.querySelector('.set-check'); _cb.addEventListener('change', ()=> wrap.classList.toggle('done', _cb.checked));
   wrap.dataset.target = (t.weight||0)+' lb @ '+(t.reps??(t.text||''));
   return wrap;
 }
@@ -251,7 +255,7 @@ function prefillExercise(btn){
   const last = store.sets.slice().reverse().find(s=>s.ex===exName);
   if(!last){ alert('No previous set for '+exName); return; }
   card.querySelectorAll('.set-row').forEach(row => {
-    const ins = row.querySelectorAll('input');
+    const ins = row.querySelectorAll('input:not(.set-check)');
     ins[0].value = last.weight || ins[0].value;
     ins[1].value = last.reps || ins[1].value;
     ins[2].value = last.rpe || ins[2].value;
@@ -264,7 +268,7 @@ function prefillFromLast(){
     const last = store.sets.slice().reverse().find(s=>s.ex===exName);
     if(!last) return;
     card.querySelectorAll('.set-row').forEach(row => {
-      const ins = row.querySelectorAll('input');
+      const ins = row.querySelectorAll('input:not(.set-check)');
       ins[0].value = last.weight || ins[0].value;
       ins[1].value = last.reps || ins[1].value;
       ins[2].value = last.rpe || ins[2].value;
@@ -282,11 +286,11 @@ function saveAll(){
   const tsBase = dayKey();
   let added=0;
   document.querySelectorAll('.set-row').forEach((row, idx) => {
-    const ins = row.querySelectorAll('input');
+    const ins = row.querySelectorAll('input:not(.set-check)');
     const weight = parseFloat(ins[0].value||0);
     const reps   = parseInt(ins[1].value||0);
     const rpeVal = parseFloat(ins[2].value||'');
-    const note   = ins[3].value||'';
+    const note = "";
     const ex     = row.dataset.exercise;
     if(!ex || !weight || !reps) return;
     const dt = new Date(new Date(tsBase).getTime()+idx*60000).toISOString();
