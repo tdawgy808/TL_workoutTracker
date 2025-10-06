@@ -57,6 +57,8 @@
     <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
       <button class="btn" onclick="buildForm()">Build Today’s Form</button>
       <button class="btn secondary" onclick="prefillFromLast()">Prefill last session</button>
+      <button class="btn ok" onclick="applyTargetsToCurrentForm()">Auto‑fill Targets</button>
+      <span id="targetsStatus" class="muted"></span>
       <div id="dayHint" class="muted"></div>
     </div>
   </div>
@@ -190,6 +192,37 @@ function targetFor(name, meso){
     if(baseReps!=null) baseReps = clampRepToRange(name, baseReps);
   }
   return {weight:w, reps:baseReps, text: rr};
+}
+
+
+// ---------- Targets (embedded) ----------
+const TARGETS = {};
+
+function lookupTarget(name){
+  if(!name) return null;
+  if(Object.prototype.hasOwnProperty.call(TARGETS, name)) return TARGETS[name];
+  const key = Object.keys(TARGETS).find(k => k.toLowerCase()===name.toLowerCase());
+  if(key) return TARGETS[key];
+  const loose = Object.keys(TARGETS).find(k => name.toLowerCase().includes(k.toLowerCase()));
+  return loose ? TARGETS[loose] : null;
+}
+
+function applyTargetsToCurrentForm(){
+  let applied = 0;
+  document.querySelectorAll('.ex-card').forEach(card => {
+    const exName = card.querySelector('.ex-head strong')?.textContent || '';
+    const t = lookupTarget(exName);
+    if(t==null) return;
+    card.querySelectorAll('.set-row').forEach(row => {
+      const ins = row.querySelectorAll('input:not(.set-check)');
+      if(ins[0]) {
+        ins[0].value = t; // weight
+        applied++;
+      }
+    });
+  });
+  const status = document.getElementById('targetsStatus');
+  if(status) status.textContent = applied ? `Applied targets to ${applied} sets ✓` : 'No matching targets found';
 }
 
 // ---------- Today (single declaration) ----------
