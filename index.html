@@ -56,6 +56,7 @@
       </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
+      <span id="dayDebug" class="muted"></span>
       <button class="btn" onclick="buildForm()">Build Today’s Form</button>
       <button class="btn secondary" onclick="prefillFromLast()">Prefill last session</button>
       <div id="dayHint" class="muted"></div>
@@ -196,7 +197,8 @@ function targetFor(name, meso){
 
 // ---------- Init: auto-build today's form ----------
 function buildFormOnLoad(){
-  try{ buildForm(); }
+  try{ buildForm();
+    const dd=document.getElementById('dayDebug'); if(dd) dd.textContent = `Today: ${now.toLocaleDateString(undefined,{weekday:'long'})} → ${todayName}`; }
   catch(e){
     console.error('Build error:', e);
     const area=document.getElementById('formArea'); const wrap=document.getElementById('exerciseForms');
@@ -209,8 +211,11 @@ window.addEventListener('DOMContentLoaded', buildFormOnLoad);
 const now = new Date();
 const dow = now.getDay();
 if(!store.start_date){ store.start_date = todayISO(); persist(); }
-const SPLIT_FALLBACK = ["Rest / Conditioning","Push A","Lower A","Pull A","Push B","Lower B","Rest / Conditioning"];
-const todayName = (SPLIT[Number(dow)] ?? SPLIT[String(dow)] ?? SPLIT_FALLBACK[dow] ?? "Rest / Conditioning");
+// Map by weekday SHORT name to avoid numeric/timezone mismatches
+const _wd = now.toLocaleDateString(undefined,{weekday:'short'}).toLowerCase();
+const SPLIT_BY_DOW = {sun:'Rest / Conditioning',mon:'Push A',tue:'Lower A',wed:'Pull A',thu:'Push B',fri:'Lower B',sat:'Rest / Conditioning'};
+const SPLIT_FALLBACK = ['Rest / Conditioning','Push A','Lower A','Pull A','Push B','Lower B','Rest / Conditioning'];
+const todayName = SPLIT_BY_DOW[_wd] ?? SPLIT_FALLBACK[dow] ?? 'Rest / Conditioning';
 const weekIdx = getWeekIndex(); const meso = mesoWeek(weekIdx);
 
 document.getElementById('todayStamp').textContent = prettyDate(now);
@@ -348,7 +353,8 @@ document.getElementById('todayWorkout').textContent = SPLIT[dow] || "Rest / Cond
 document.getElementById('weekPill').textContent = 'Week '+weekIdx+' (W'+meso+' of meso)';
 const existingNote = store.note_by_date && store.note_by_date[todayISO()] || ''; document.getElementById('dayNote').value = existingNote;
 document.getElementById('dayNote').addEventListener('change', e => { if(!store.note_by_date) store.note_by_date={}; store.note_by_date[todayISO()] = e.target.value; persist(); });
-if(LIFT_DAYS.has(dow)){ buildForm(); } else { document.getElementById('dayHint').textContent = 'Rest/conditioning day — your 5‑day plan runs Mon–Fri.'; }
+if(LIFT_DAYS.has(dow)){ buildForm();
+    const dd=document.getElementById('dayDebug'); if(dd) dd.textContent = `Today: ${now.toLocaleDateString(undefined,{weekday:'long'})} → ${todayName}`; } else { document.getElementById('dayHint').textContent = 'Rest/conditioning day — your 5‑day plan runs Mon–Fri.'; }
 renderRecent();
 </script>
 </body>
