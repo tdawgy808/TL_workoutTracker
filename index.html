@@ -39,7 +39,7 @@
     <span id="todayWorkout" class="pill">—</span>
     <span id="weekPill" class="pill">Week 1</span>
     <a class="btn secondary" onclick="exportJSON()">Export</a>
-    <label class="muted" style="margin:0">v2.3.1 (Cardio fix)</label>
+    <label class="muted" style="margin:0"><span id="versionPill">v2.3.6 (Pull mapping + cache-bust)</span></label>
   </div>
 </header>
 
@@ -113,30 +113,58 @@
 
 <script>
 // ---------- Configs ----------
+// ---------- App version label ----------
+const APP_VERSION = 'v2.3.6 (Pull mapping + cache-bust)';
+document.addEventListener('DOMContentLoaded', ()=>{
+  const vp=document.getElementById('versionPill'); if(vp) vp.textContent = APP_VERSION;
+});
+
 const SPLIT = {1:"Upper A",2:"Lower A",3:"Upper B",4:"Lower B",5:"Mixed"};
 const LIFT_DAYS = new Set([1,2,3,4,5]);
 
 const REP_RANGES = {
-  "Barbell Bench Press":"6-8","Dumbbell Lateral Raise":"12-15","Barbell Curl":"10-12",
-  "Plank":"30-45s","Hanging Leg Raise":"30-45s",
-  "Back Squat":"6-8","Romanian Deadlift":"8-10","Walking Lunge":"12/leg","Calf Raise":"15-20",
+  "Barbell Bench Press":"6-8","Dumbbell Lateral Raise":"12-15","Barbell Curl":"10-12"
+  "Plank":"30-45s","Hanging Leg Raise":"30-45s"
+  "Back Squat":"6-8","Romanian Deadlift":"8-10","Walking Lunge":"12/leg","Calf Raise":"15-20"
   "Deadlift":"4-6","Bulgarian Split Squat":"8-10","Kettlebell Swing":"15"
+  "Incline Dumbbell Bench Press":"8-10"
+  "Overhead Press":"8"
+  "Triceps Rope Pushdown":"12-15"
+  "Barbell Row":"8"
+  "Lat Pulldown":"10"
+  "Face Pull":"15"
+  "Dumbbell Bench Press":"8-10"
+  "Front Squat":"5-8"
+  "Hip Thrust":"8-10"
+  "Leg Curl":"10-12"
+  "Seated Cable Row":"10-12"
 };
 const START_W = {
-  "Barbell Bench Press":175,"Dumbbell Lateral Raise":15,"Barbell Curl":65,
-  "Back Squat":165,"Romanian Deadlift":145,"Walking Lunge":90,"Calf Raise":0,
-  "Deadlift":205,"Bulgarian Split Squat":80,"Kettlebell Swing":45,
+  "Barbell Bench Press":175,"Dumbbell Lateral Raise":15,"Barbell Curl":65
+  "Back Squat":165,"Romanian Deadlift":145,"Walking Lunge":90,"Calf Raise":0
+  "Deadlift":205,"Bulgarian Split Squat":80,"Kettlebell Swing":45
   "Plank":0,"Hanging Leg Raise":0
+  "Incline Dumbbell Bench Press":0
+  "Overhead Press":0
+  "Triceps Rope Pushdown":0
+  "Barbell Row":0
+  "Lat Pulldown":0
+  "Face Pull":0
+  "Dumbbell Bench Press":0
+  "Front Squat":0
+  "Hip Thrust":0
+  "Leg Curl":0
+  "Seated Cable Row":0
 };
-const COMPOUNDS = new Set(["Barbell Bench Press","Back Squat","Romanian Deadlift","Deadlift"]);
-const ISOLATIONS = new Set(["Dumbbell Lateral Raise","Barbell Curl","Calf Raise","Bulgarian Split Squat","Kettlebell Swing","Walking Lunge","Plank","Hanging Leg Raise"]);
+const COMPOUNDS = new Set(["Barbell Bench Press","Back Squat","Romanian Deadlift","Deadlift""Overhead Press","Barbell Row","Front Squat","Hip Thrust","Dumbbell Bench Press","Incline Dumbbell Bench Press","Seated Cable Row","Lat Pulldown"]);
+const ISOLATIONS = new Set(["Dumbbell Lateral Raise","Barbell Curl","Calf Raise","Bulgarian Split Squat","Kettlebell Swing","Walking Lunge","Plank","Hanging Leg Raise""Face Pull","Triceps Rope Pushdown","Leg Curl"]);
 
 const DAY_PLANS = {
-  "Upper A":[["Barbell Bench Press",4],["Dumbbell Lateral Raise",3],["Barbell Curl",3],["Plank",3],["Hanging Leg Raise",3]],
+  "Push A":[["Barbell Bench Press",4],["Incline Dumbbell Bench Press",3],["Overhead Press",3],["Dumbbell Lateral Raise",3],["Triceps Rope Pushdown",3]],
   "Lower A":[["Back Squat",4],["Romanian Deadlift",3],["Walking Lunge",3],["Calf Raise",3]],
-  "Upper B":[["Barbell Bench Press",3],["Dumbbell Lateral Raise",3],["Barbell Curl",3],["Plank",3]],
-  "Lower B":[["Deadlift",3],["Bulgarian Split Squat",3],["Kettlebell Swing",3],["Calf Raise",3],["Walking Lunge",2]],
-  "Mixed":[["Barbell Bench Press",3],["Back Squat",3],["Barbell Curl",3],["Dumbbell Lateral Raise",3],["Plank",3],["Hanging Leg Raise",3]]
+  "Pull A":[["Deadlift",3],["Barbell Row",3],["Lat Pulldown",3],["Face Pull",3],["Barbell Curl",3]],
+  "Push B":[["Dumbbell Bench Press",3],["Overhead Press",3],["Dumbbell Lateral Raise",3],["Triceps Rope Pushdown",3],["Plank",3]],
+  "Lower B":[["Front Squat",3],["Hip Thrust",3],["Leg Curl",3],["Calf Raise",3],["Hanging Leg Raise",3]]
 };
 
 // ---------- Storage & helpers ----------
