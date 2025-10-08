@@ -1,385 +1,172 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CoachTommy — 12‑Week (Fitbod‑Only) 5‑Day + Cardio</title>
-<style>
-  :root{--bg:#0f1115;--card:#171a21;--muted:#9aa4b2;--text:#e8edf2;--stroke:#2a3446;--accent:#7dd3fc;--ok:#6ee7b7}
-  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-  header{position:sticky;top:0;background:#12151d;border-bottom:1px solid var(--stroke);padding:12px 14px;z-index:9;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap}
-  h1{margin:0;font-size:18px}
-  .wrap{max-width:960px;margin:0 auto;padding:14px}
-  .card{background:var(--card);border:1px solid var(--stroke);border-radius:14px;padding:14px;margin:12px 0}
-  label{display:block;color:var(--muted);font-size:12px;margin:6px 0 4px}
-  input,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid var(--stroke);background:#0b0e14;color:var(--text)}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .btn{padding:10px 12px;border-radius:10px;border:1px solid var(--stroke);background:#0e1420;color:var(--text);cursor:pointer}
-  .btn.secondary{background:#111827} .btn.ok{border-color:var(--ok)}
-  .btn:hover{border-color:var(--accent)}
-  table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:8px;border-bottom:1px solid var(--stroke);text-align:left}
-  .muted{color:var(--muted);font-size:12px}
-  .ex-card{border:1px dashed #2a3446;border-radius:12px;padding:12px;margin:10px 0}
-  .ex-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap}
-  .set-row{display:grid;grid-template-columns:28px 70px 70px 70px 1fr;gap:8px;margin:6px 0;align-items:center}
-  .tag{display:inline-block;padding:2px 8px;border:1px solid var(--stroke);border-radius:999px;font-size:12px;color:var(--muted);margin-left:8px}
-  .pill{display:inline-block;padding:2px 8px;border:1px solid var(--stroke);border-radius:999px;font-size:12px;margin-left:6px}
-  .targets{font-size:12px;color:#cbd5e1}
-  .cardio-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-  .checkbox-line{display:flex;align-items:center;gap:10px}
-.set-row.done{opacity:.55}
-.set-check{width:18px;height:18px;cursor:pointer}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weekly Workout (Fitbod-Only, v2.3.6)</title>
+  <style>
+    :root{
+      --bg:#0b0f16; --card:#101623; --ink:#e8eef8; --muted:#9fb0c9; --stroke:#1e2a3f; --accent:#7dd3fc; --ok:#34d399;
+    }
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    .wrap{max-width:960px;margin:28px auto;padding:20px}
+    h1{margin:0 0 10px}
+    .muted{color:var(--muted)}
+    .card{background:var(--card);border:1px solid var(--stroke);border-radius:14px;padding:16px;margin:12px 0}
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .btn{padding:8px 12px;border:1px solid var(--stroke);border-radius:10px;background:#0f1624;color:var(--ink);cursor:pointer}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+    .tab{padding:6px 10px;border:1px solid var(--stroke);border-radius:999px;background:#0e1526;color:var(--ink);cursor:pointer;font-size:14px}
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th,td{padding:8px;border-bottom:1px solid var(--stroke);text-align:left}
+    th{color:var(--muted);font-weight:600}
+    .pill{display:inline-block;padding:2px 8px;border:1px solid var(--stroke);border-radius:999px;font-size:12px;color:var(--muted)}
+    .grid{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:720px){.grid{grid-template-columns:1fr 1fr}}
+    @media print{
+      body{background:#fff;color:#000}
+      .card{border-color:#ddd}
+      .tabs,.controls{display:none}
+      .wrap{max-width:100%;margin:0}
+      a{color:#000}
+    }
+  </style>
 </head>
 <body>
-<header>
-  <h1>CoachTommy — 12‑Week (Fitbod‑Only) 5‑Day</h1>
-  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-    <span id="todayStamp" class="pill">—</span>
-    <span id="todayWorkout" class="pill">—</span>
-    <span id="weekPill" class="pill">Week 1</span>
-    <a class="btn secondary" onclick="exportJSON()">Export</a>
-    <label class="muted" style="margin:0">v2.3.1 (Cardio fix)</label>
-  </div>
-</header>
+  <div class="wrap">
+    <h1>Weekly Workout — 5-Day Split</h1>
+    <div class="muted">Fitbod-only progression • version <strong>v2.3.6</strong></div>
 
-<div class="wrap">
-  <div class="card" id="diagBanner" style="border:1px solid #7dd3fc"><div class="muted" id="diagText">Diagnostics loading…</div><div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn ok" onclick="forcePlan('Pull A')">Force Pull A</button><button class="btn ok" onclick="forcePlan('Push B')">Force Push B</button><button class="btn" onclick="buildForm()">Rebuild</button></div></div><div class="card">
-    <div class="row">
-      <div>
-        <label>Start Time</label>
-        <input id="startTime" type="time" value="06:00">
+    <div class="card controls">
+      <div class="row">
+        <div class="pill" id="todayInfo">Today: —</div>
+        <button class="btn" onclick="window.print()">Print Week</button>
       </div>
-      <div>
-        <label>Notes (optional)</label>
-        <input id="dayNote" placeholder="Warm-up cues, targets, etc.">
-      </div>
+      <div class="tabs" id="tabs"></div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
-      <button class="btn" onclick="buildForm()">Build Today’s Form</button>
-      <button class="btn secondary" onclick="prefillFromLast()">Prefill last session</button>
-      <div id="dayHint" class="muted"></div>
+
+    <div class="grid" id="days"></div>
+
+    <div class="card">
+      <div class="muted">Cardio guidance</div>
+      <p>On lower days: 30 minutes treadmill walk @ 3.5 mph, 2–3% incline. Optional Saturday Zone-2 cardio 30–45 minutes.</p>
     </div>
   </div>
 
-  <div id="formArea" class="card" style="display:none">
-    <h3 style="margin:0 0 10px">Today’s Sets</h3>
-    <div class="targets" id="targetsHelp"></div>
-    <div id="exerciseForms"></div>
-    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-      <button class="btn ok" onclick="saveAll()">Save All Sets</button>
-      <div id="saveStatus" class="muted"></div>
-    </div>
-  </div>
+  <script>
+  // --- Data ---------------------------------------------------------------
+  const WEEK = [
+    {
+      key:'mon', name:'Monday — Push A (Chest / Shoulders / Triceps)',
+      rows:[
+        ['Barbell Bench Press','4 × 5–6','180','8–8.5','Tight setup; full lockout'],
+        ['Incline Dumbbell Bench Press','3 × 8–10','55 ea','8','Neutral grip'],
+        ['Overhead Press','3 × 8','95','8','Core braced'],
+        ['Dumbbell Lateral Raise','3 × 12–15','17.5','8','Strict form'],
+        ['Triceps Rope Pushdown','3 × 12–15','55','8','Elbows pinned']
+      ]
+    },
+    {
+      key:'tue', name:'Tuesday — Lower A (Quads / Hamstrings / Glutes + Cardio)',
+      rows:[
+        ['Back Squat','4 × 6–8','170','8','Controlled descent'],
+        ['Romanian Deadlift','3 × 8–10','185','8','Hamstring stretch'],
+        ['Walking Lunge','3 × 12 / leg','40 ea','8','Long stride'],
+        ['Calf Raise','3 × 15–20','135','8','Pause at top'],
+        ['Hanging Leg Raise','3 × 12','—','8','Controlled']
+      ]
+    },
+    {
+      key:'wed', name:'Wednesday — Pull A (Back / Biceps)',
+      rows:[
+        ['Deadlift','3 × 5','230','8–8.5','Brace hard; control down'],
+        ['Barbell Row','3 × 8','135','8','Mid-back focus'],
+        ['Lat Pulldown','3 × 10','100','8','Pause at chest'],
+        ['Face Pull','3 × 15','50','8','External rotation finish'],
+        ['Barbell Curl','3 × 10–12','67.5','8','Controlled tempo']
+      ]
+    },
+    {
+      key:'thu', name:'Thursday — Push B (Chest / Shoulders Hypertrophy)',
+      rows:[
+        ['Dumbbell Bench Press','3 × 8–10','60 ea','8','Slight incline'],
+        ['Overhead Press','3 × 8','95','8','Maintain posture'],
+        ['Dumbbell Lateral Raise','3 × 12–15','17.5','8','Strict'],
+        ['Triceps Rope Pushdown','3 × 12–15','55','8','Controlled'],
+        ['Plank','3 × 45 s','—','—','Core stability']
+      ]
+    },
+    {
+      key:'fri', name:'Friday — Lower B (Glutes / Hamstrings / Core + Cardio)',
+      rows:[
+        ['Front Squat','3 × 5–8','155','8','Upright torso'],
+        ['Hip Thrust','3 × 8–10','185','8','Pause at top'],
+        ['Leg Curl','3 × 10–12','85','8','Slow eccentric'],
+        ['Calf Raise','3 × 15–20','135','8','Full ROM'],
+        ['Hanging Leg Raise','3 × 12','—','8','Controlled']
+      ]
+    },
+    { key:'sat', name:'Saturday — Optional Cardio / Mobility', rows: [] },
+    { key:'sun', name:'Sunday — Rest', rows: [] }
+  ];
 
-  <!-- Always-visible Cardio Confirmation -->
-  <div class="card">
-    <h3 style="margin:0 0 10px">Cardio — Treadmill Walk</h3>
-    <div class="checkbox-line">
-      <input type="checkbox" id="cardioDone" checked>
-      <label for="cardioDone" style="margin:0">Completed today (30 min @ <span id="spLbl">3.0</span> mph, <span id="inLbl">3</span>%)</label>
-    </div>
-    <div class="cardio-row" style="margin-top:8px">
-      <div>
-        <label>Duration (min)</label>
-        <input id="cardioDur" type="number" value="30">
-      </div>
-      <div>
-        <label>Speed (mph)</label>
-        <input id="cardioSpd" type="number" step="0.1" value="3.0" oninput="document.getElementById('spLbl').textContent=this.value">
-      </div>
-      <div>
-        <label>Incline (%)</label>
-        <input id="cardioInc" type="number" step="0.5" value="3" oninput="document.getElementById('inLbl').textContent=this.value">
-      </div>
-    </div>
-    <label>Notes (pain/tightness, skipped/shortened)</label>
-    <textarea id="cardioNote" placeholder="e.g., left calf tight; cut short at 22 min"></textarea>
-    <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
-      <button class="btn ok" onclick="saveCardio()">Save Cardio</button>
-      <div id="cardioStatus" class="muted"></div>
-    </div>
-  </div>
+  // --- Render -------------------------------------------------------------
+  const daysEl = document.getElementById('days');
+  const tabsEl = document.getElementById('tabs');
 
-  <div class="card">
-    <h3 style="margin:0 0 8px">Recent (last 30 entries incl. cardio)</h3>
-    <table>
-      <thead><tr><th>Date</th><th>Exercise</th><th>Target</th><th>W</th><th>R</th><th>RPE</th><th>Note</th></tr></thead>
-      <tbody id="recentT"></tbody>
-    </table>
-  </div>
-</div>
-
-<script>
-// ---------- Configs ----------
-
-// ---------- Diagnostics ----------
-function listPlanKeys(){ try{ return Object.keys(DAY_PLANS).join(', ');}catch(e){ return '(DAY_PLANS not found)'; } }
-function forcePlan(name){
-  try{
-    window._forcedPlan = name;
-    document.getElementById('todayWorkout').textContent = name + ' (forced)';
-    const formWrap = document.getElementById('exerciseForms');
-    formWrap.innerHTML = '';
-    const plan = DAY_PLANS[name] || [];
-    if(plan.length===0){
-      formWrap.innerHTML = '<div class="muted">No plan exists for '+name+' — keys: '+listPlanKeys()+'</div>';
-      document.getElementById('formArea').style.display='block'; return;
+  function renderDayCard(day){
+    const hasRows = day.rows && day.rows.length;
+    const card = document.createElement('div'); card.className = 'card';
+    const h2 = document.createElement('h2'); h2.textContent = day.name; card.appendChild(h2);
+    if(!hasRows){
+      const p = document.createElement('p'); p.className='muted';
+      p.textContent = day.key==='sat' ? 'Cardio 30–45 min (Zone 2) + mobility.' : 'Rest day.';
+      card.appendChild(p);
+      return card;
     }
-    plan.forEach(([ex, sets]) => {
-      const card = document.createElement('div'); card.className='ex-card';
-      const t = targetFor(ex, mesoWeek(getWeekIndex()));
-      const head = document.createElement('div'); head.className='ex-head';
-      head.innerHTML = '<div><strong>'+ex+'</strong><span class="pill" style="margin-left:8px">'+(t.weight||0)+' lb @ '+(t.reps??(t.text||''))+'</span></div>';
-      const rows = document.createElement('div'); rows.className='rows';
-      for(let i=0;i<sets;i++){ rows.appendChild(makeSetRow(ex, t)); }
-      card.appendChild(head); card.appendChild(rows);
-      formWrap.appendChild(card);
+    const tbl = document.createElement('table');
+    tbl.innerHTML = '<thead><tr><th>Exercise</th><th>Sets × Reps</th><th>Weight (lb)</th><th>RPE</th><th>Notes</th></tr></thead>';
+    const tb = document.createElement('tbody');
+    day.rows.forEach(r=>{
+      const tr = document.createElement('tr');
+      r.forEach(cell=>{
+        const td = document.createElement('td'); td.textContent = cell; tr.appendChild(td);
+      });
+      tb.appendChild(tr);
     });
-    document.getElementById('formArea').style.display='block';
-    const now = new Date(); const dd = now.toLocaleDateString(undefined,{weekday:'long'});
-    document.getElementById('diagText').textContent = 'Forced: '+name+' • '+dd+' • Keys: '+listPlanKeys();
-  }catch(e){
-    document.getElementById('diagText').textContent = 'Force error: '+(e&&e.message?e.message:e);
+    tbl.appendChild(tb); card.appendChild(tbl); return card;
   }
-}
-function updateDiag(){
-  try{
-    const now = new Date();
-    const dd = now.toLocaleDateString(undefined,{weekday:'long'});
-    const planName = (typeof todayName!=='undefined'? todayName : '(unset)');
-    const p = (typeof DAY_PLANS!=='undefined' && DAY_PLANS[planName]) ? DAY_PLANS[planName] : [];
-    document.getElementById('diagText').textContent = 'Today: '+dd+' → '+planName+' • Plan sets: '+(p?p.length:0)+' • Keys: '+listPlanKeys();
-  }catch(e){
-    document.getElementById('diagText').textContent = 'Diag error: '+(e&&e.message?e.message:e);
-  }
-}
-document.addEventListener('DOMContentLoaded', updateDiag);
 
-const SPLIT = {1:"Upper A",2:"Lower A",3:"Upper B",4:"Lower B",5:"Mixed"};
-const LIFT_DAYS = new Set([1,2,3,4,5]);
-
-const REP_RANGES = {
-  "Barbell Bench Press":"6-8","Dumbbell Lateral Raise":"12-15","Barbell Curl":"10-12",
-  "Plank":"30-45s","Hanging Leg Raise":"30-45s",
-  "Back Squat":"6-8","Romanian Deadlift":"8-10","Walking Lunge":"12/leg","Calf Raise":"15-20",
-  "Deadlift":"4-6","Bulgarian Split Squat":"8-10","Kettlebell Swing":"15"
-};
-const START_W = {
-  "Barbell Bench Press":175,"Dumbbell Lateral Raise":15,"Barbell Curl":65,
-  "Back Squat":165,"Romanian Deadlift":145,"Walking Lunge":90,"Calf Raise":0,
-  "Deadlift":205,"Bulgarian Split Squat":80,"Kettlebell Swing":45,
-  "Plank":0,"Hanging Leg Raise":0
-};
-const COMPOUNDS = new Set(["Barbell Bench Press","Back Squat","Romanian Deadlift","Deadlift"]);
-const ISOLATIONS = new Set(["Dumbbell Lateral Raise","Barbell Curl","Calf Raise","Bulgarian Split Squat","Kettlebell Swing","Walking Lunge","Plank","Hanging Leg Raise"]);
-
-const DAY_PLANS = {
-  "Upper A":[["Barbell Bench Press",4],["Dumbbell Lateral Raise",3],["Barbell Curl",3],["Plank",3],["Hanging Leg Raise",3]],
-  "Lower A":[["Back Squat",4],["Romanian Deadlift",3],["Walking Lunge",3],["Calf Raise",3]],
-  "Upper B":[["Barbell Bench Press",3],["Dumbbell Lateral Raise",3],["Barbell Curl",3],["Plank",3]],
-  "Lower B":[["Deadlift",3],["Bulgarian Split Squat",3],["Kettlebell Swing",3],["Calf Raise",3],["Walking Lunge",2]],
-  "Mixed":[["Barbell Bench Press",3],["Back Squat",3],["Barbell Curl",3],["Dumbbell Lateral Raise",3],["Plank",3],["Hanging Leg Raise",3]]
-};
-
-// ---------- Storage & helpers ----------
-let store = JSON.parse(localStorage.getItem('ct_fitbod_only_5day_cardio_fix') || '{"sets":[], "start_date": null, "note_by_date":{}}');
-function persist(){ localStorage.setItem('ct_fitbod_only_5day_cardio_fix', JSON.stringify(store)); }
-function todayISO(){ return new Date().toISOString().slice(0,10); }
-function prettyDate(d){
-  return d.toLocaleDateString(undefined, { weekday:'long', year:'numeric', month:'short', day:'numeric' }) + ' • ' +
-         d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
-}
-function getWeekIndex(){
-  const start = store.start_date ? new Date(store.start_date) : new Date(todayISO());
-  const today = new Date(todayISO());
-  const days = Math.floor((today - start)/(1000*60*60*24));
-  const w = Math.floor(days/7) + 1;
-  return Math.min(12, Math.max(1, w));
-}
-function mesoWeek(week){ return ((week-1)%4)+1; }
-function clampRepToRange(name, reps){
-  const rr = REP_RANGES[name] || "";
-  if(rr.includes('-')){
-    const [lo,hi] = rr.split('-').map(x=>parseInt(x));
-    if(isNaN(lo)||isNaN(hi)) return reps;
-    return Math.min(hi, Math.max(lo, reps));
-  }
-  return reps;
-}
-function lastWeight(name){
-  const m = store.sets.slice().reverse().find(s=>s.ex===name && s.weight);
-  return m ? m.weight : (START_W[name]||0);
-}
-
-// Targets per mesocycle week
-function targetFor(name, meso){
-  let w = lastWeight(name);
-  if(!w) w = START_W[name]||0;
-  const rr = REP_RANGES[name] || "";
-  let baseReps = null;
-  if(rr.includes('-')){ const [lo,hi]=rr.split('-').map(x=>parseInt(x)); baseReps = Math.round((lo+hi)/2); }
-  else if(rr.endsWith('s') || rr==='AMRAP' || rr==='Rounds' || rr.includes('/')){ baseReps = null; }
-  else { const n=parseInt(rr); baseReps = isNaN(n)? null:n; }
-
-  if(COMPOUNDS.has(name)){
-    const mult = (meso===1?1 : meso===2?1.025 : meso===3?1.05 : 0.9);
-    w = Math.round(w * mult / 2.5) * 2.5;
-  }else{
-    if(meso===2 && baseReps!=null) baseReps += 1;
-    if(meso===3 && baseReps!=null) baseReps += 2;
-    if(meso===4){
-      w = Math.round(w * 0.95 / 2.5) * 2.5;
-      if(baseReps!=null) baseReps = Math.max(1, baseReps - 2);
-    }
-    if(baseReps!=null) baseReps = clampRepToRange(name, baseReps);
-  }
-  return {weight:w, reps:baseReps, text: rr};
-}
-
-// ---------- Today (single declaration) ----------
-const now = new Date();
-const dow = now.getDay();
-if(!store.start_date){ store.start_date = todayISO(); persist(); }
-const todayName = SPLIT[dow] || "Rest / Conditioning";
-const weekIdx = getWeekIndex(); const meso = mesoWeek(weekIdx);
-
-document.getElementById('todayStamp').textContent = prettyDate(now);
-document.getElementById('todayWorkout').textContent = todayName;
-document.getElementById('weekPill').textContent = 'Week '+weekIdx+' (W'+meso+' of meso)';
-
-// ---------- Build UI ----------
-function makeSetRow(name, t){
-  const wrap = document.createElement('div'); wrap.className='set-row';
-  wrap.innerHTML = '<input type=\"checkbox\" class=\"set-check\" aria-label=\"Complete set\">' + '<input type=\"number\" placeholder=\"lb\" value=\"'+(t.weight||'')+'\">' + '<input type=\"number\" placeholder=\"reps\" value=\"'+(t.reps??'')+'\">' + '<input type=\"number\" step=\"0.5\" placeholder=\"RPE\" value=\"'+(t.reps? '7.5':'7')+'\">';
-wrap.dataset.exercise = name;
-  const _cb = wrap.querySelector('.set-check'); _cb.addEventListener('change', ()=> wrap.classList.toggle('done', _cb.checked));
-  wrap.dataset.target = (t.weight||0)+' lb @ '+(t.reps??(t.text||''));
-  return wrap;
-}
-
-function buildForm(){
-  const formWrap = document.getElementById('exerciseForms');
-  formWrap.innerHTML = '';
-  const plan = DAY_PLANS[todayName] || [];
-  if(plan.length===0){
-    formWrap.innerHTML = '<div class="muted">No lifting plan today. Mobility/conditioning recommended.</div>';
-    document.getElementById('formArea').style.display='block'; return;
-  }
-  plan.forEach(([name, sets]) => {
-    const card = document.createElement('div'); card.className='ex-card';
-    const t = targetFor(name, meso);
-    const head = document.createElement('div'); head.className='ex-head';
-    const title = document.createElement('div'); title.innerHTML = '<strong>'+name+'</strong> <span class="tag">'+(REP_RANGES[name]||'')+'</span> <span class="tag">Target: '+(t.weight||0)+' lb @ '+(t.reps??(t.text||''))+'</span>';
-    const controls = document.createElement('div'); controls.innerHTML = '<button class="btn secondary" onclick="addSetRow(this)">＋ set</button> <button class="btn secondary" onclick="prefillExercise(this)">Prefill last</button>';
-    head.appendChild(title); head.appendChild(controls); card.appendChild(head);
-    const rows = document.createElement('div'); rows.className='rows';
-    for(let i=0;i<sets;i++){ rows.appendChild(makeSetRow(name, t)); }
-    card.appendChild(rows);
-    formWrap.appendChild(card);
-  });
-  document.getElementById('targetsHelp').textContent = 'Compounds: W2 ≈ +2.5%, W3 ≈ +5%, W4 deload ≈ −10%. Isolations: +reps in W2/W3, small deload in W4.';
-  document.getElementById('formArea').style.display='block';
-  document.getElementById('saveStatus').textContent='';
-  document.getElementById('dayHint').textContent = 'Week '+weekIdx+' • Mesocycle week '+meso+' • '+todayName+' (5‑day Fitbod‑only).';
-}
-
-function addSetRow(btn){
-  const card = btn.closest('.ex-card');
-  const name = card.querySelector('.ex-head strong').textContent;
-  const t = targetFor(name, meso);
-  card.querySelector('.rows').appendChild(makeSetRow(name, t));
-}
-
-function prefillExercise(btn){
-  const card = btn.closest('.ex-card');
-  const exName = card.querySelector('.ex-head strong').textContent;
-  const last = store.sets.slice().reverse().find(s=>s.ex===exName);
-  if(!last){ alert('No previous set for '+exName); return; }
-  card.querySelectorAll('.set-row').forEach(row => {
-    const ins = row.querySelectorAll('input:not(.set-check)');
-    ins[0].value = last.weight || ins[0].value;
-    ins[1].value = last.reps || ins[1].value;
-    ins[2].value = last.rpe || ins[2].value;
-  });
-}
-
-function prefillFromLast(){
-  document.querySelectorAll('.ex-card').forEach(card => {
-    const exName = card.querySelector('.ex-head strong').textContent;
-    const last = store.sets.slice().reverse().find(s=>s.ex===exName);
-    if(!last) return;
-    card.querySelectorAll('.set-row').forEach(row => {
-      const ins = row.querySelectorAll('input:not(.set-check)');
-      ins[0].value = last.weight || ins[0].value;
-      ins[1].value = last.reps || ins[1].value;
-      ins[2].value = last.rpe || ins[2].value;
+  function renderAll(){
+    daysEl.innerHTML = ''; WEEK.forEach(d=> daysEl.appendChild(renderDayCard(d)));
+    tabsEl.innerHTML = '';
+    WEEK.slice(0,5).forEach(d=>{ // Mon–Fri tabs
+      const b = document.createElement('button'); b.className='tab'; b.textContent = d.name.split(' — ')[0];
+      b.onclick = ()=> scrollToDay(d.name);
+      tabsEl.appendChild(b);
     });
-  });
-}
+  }
 
-// Save lifting sets
-function dayKey(){
-  const d = todayISO();
-  const t = (document.getElementById('startTime').value || '06:00') + ':00';
-  return d+'T'+t;
-}
-function saveAll(){
-  const tsBase = dayKey();
-  let added=0;
-  document.querySelectorAll('.set-row').forEach((row, idx) => {
-    const ins = row.querySelectorAll('input:not(.set-check)');
-    const weight = parseFloat(ins[0].value||0);
-    const reps   = parseInt(ins[1].value||0);
-    const rpeVal = parseFloat(ins[2].value||'');
-    const note = "";
-    const ex     = row.dataset.exercise;
-    if(!ex || !weight || !reps) return;
-    const dt = new Date(new Date(tsBase).getTime()+idx*60000).toISOString();
-    store.sets.push({dt, ex, weight, reps, rpe: isNaN(rpeVal)? null : rpeVal, note, target: row.dataset.target, week: weekIdx, meso: meso, kind: todayName});
-    added++;
-  });
-  if(added===0){ document.getElementById('saveStatus').textContent='Nothing to save — fill in weight & reps first.'; return; }
-  persist(); renderRecent(); document.getElementById('saveStatus').textContent='Saved '+added+' sets ✓';
-}
+  function scrollToDay(title){
+    const cards = [...document.querySelectorAll('.card h2')];
+    const el = cards.find(h=> h.textContent===title);
+    if(el){ el.scrollIntoView({behavior:'smooth', block:'start'}); highlight(el.parentElement); }
+  }
+  function highlight(el){ el.style.outline = '2px solid var(--accent)'; setTimeout(()=> el.style.outline='none', 1200); }
 
-// Save cardio
-function saveCardio(){
-  const dur = parseInt(document.getElementById('cardioDur').value||'30');
-  const spd = parseFloat(document.getElementById('cardioSpd').value||'3.0');
-  const inc = parseFloat(document.getElementById('cardioInc').value||'3');
-  const note= (document.getElementById('cardioNote').value||'').trim();
-  const done= document.getElementById('cardioDone').checked;
-  const dt = new Date().toISOString();
-  const label = 'Cardio — Treadmill '+dur+' min ('+spd+' mph, '+inc+'%)';
-  const statusTag = done ? '[Completed]' : '[Not completed]';
-  store.sets.push({dt, ex: label, weight: 0, reps: dur, rpe: null, note: statusTag + (note? ' — '+note:''), target: '', week: getWeekIndex(), meso: mesoWeek(getWeekIndex()), kind: 'Cardio'});
-  persist(); renderRecent();
-  document.getElementById('cardioStatus').textContent = done ? 'Saved ✓ (completed)' : 'Saved ✓ (not completed)';
-  document.getElementById('cardioNote').value='';
-}
+  function setToday(){
+    try{
+      const now = new Date();
+      const wd = now.toLocaleDateString(undefined,{weekday:'short'}).toLowerCase();
+      const map = {sun:'Sunday',mon:'Monday',tue:'Tuesday',wed:'Wednesday',thu:'Thursday',fri:'Friday',sat:'Saturday'};
+      const name = map[wd] || '—';
+      document.getElementById('todayInfo').textContent = `Today: ${name}`;
+      const todayCardTitle = WEEK.find(d=> d.name.startsWith(name));
+      if(todayCardTitle) scrollToDay(todayCardTitle.name);
+    }catch{ /* no-op */ }
+  }
 
-function renderRecent(){
-  const tb = document.getElementById('recentT');
-  tb.innerHTML = store.sets.slice().sort((a,b)=>new Date(b.dt)-new Date(a.dt)).slice(0,30).map(s =>
-    '<tr><td>'+new Date(s.dt).toLocaleString()+'</td><td>'+s.ex+'</td><td>'+ (s.target||'') +'</td><td>'+ (s.weight||'') +'</td><td>'+ (s.reps||'') +'</td><td>'+(s.rpe??'')+'</td><td>'+(s.note||'')+'</td></tr>'
-  ).join('');
-}
-
-// Export
-function exportJSON(){
-  const blob = new Blob([JSON.stringify(store,null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='coach_tommy_fitbod_only_5day_cardio_fix.json'; a.click();
-}
-
-// Init (single pass)
-if(!store.start_date){ store.start_date = todayISO(); persist(); }
-document.getElementById('todayStamp').textContent = prettyDate(now);
-document.getElementById('todayWorkout').textContent = SPLIT[dow] || "Rest / Conditioning";
-document.getElementById('weekPill').textContent = 'Week '+weekIdx+' (W'+meso+' of meso)';
-const existingNote = store.note_by_date && store.note_by_date[todayISO()] || ''; document.getElementById('dayNote').value = existingNote;
-document.getElementById('dayNote').addEventListener('change', e => { if(!store.note_by_date) store.note_by_date={}; store.note_by_date[todayISO()] = e.target.value; persist(); });
-if(LIFT_DAYS.has(dow)){ buildForm(); } else { document.getElementById('dayHint').textContent = 'Rest/conditioning day — your 5‑day plan runs Mon–Fri.'; }
-renderRecent();
-</script>
+  renderAll(); setToday();
+  </script>
 </body>
 </html>
