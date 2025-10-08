@@ -10,6 +10,7 @@
   h1{margin:0;font-size:18px}
   .wrap{max-width:960px;margin:0 auto;padding:14px}
   .card{background:var(--card);border:1px solid var(--stroke);border-radius:14px;padding:14px;margin:12px 0}
+  #formArea{display:block}
   label{display:block;color:var(--muted);font-size:12px;margin:6px 0 4px}
   input,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid var(--stroke);background:#0b0e14;color:var(--text)}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -55,6 +56,7 @@
       </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
+      <span id="dayDebug" class="muted"></span>
       <button class="btn" onclick="buildForm()">Build Today’s Form</button>
       <button class="btn secondary" onclick="prefillFromLast()">Prefill last session</button>
       <button class="btn ok" onclick="applyTargetsToCurrentForm()">Auto‑fill Targets</button>
@@ -249,6 +251,7 @@ function applyTargetsToCurrentForm(){
 function buildFormOnLoad(){
   try{
     buildForm();
+    const dd=document.getElementById('dayDebug'); if(dd) dd.textContent = `Today: ${todayName}`;
   }catch(e){
     console.error('Build error:', e);
     const area = document.getElementById('formArea');
@@ -261,6 +264,11 @@ window.addEventListener('DOMContentLoaded', buildFormOnLoad);
 
 // ---------- Today (single declaration) ----------
 const now = new Date();
+const dow = now.getDay();
+const SPLIT_FALLBACK = ["Rest / Conditioning","Push A","Lower A","Pull A","Push B","Lower B","Rest / Conditioning"];
+const _tn = SPLIT[Number(dow)] ?? SPLIT[String(dow)] ?? SPLIT_FALLBACK[dow] ?? "Rest / Conditioning";
+const todayName = _tn;
+
 const dow = now.getDay();
 if(!store.start_date){ store.start_date = todayISO(); persist(); }
 const todayName = SPLIT[dow] || "Rest / Conditioning";
@@ -401,7 +409,8 @@ document.getElementById('todayWorkout').textContent = SPLIT[dow] || "Rest / Cond
 document.getElementById('weekPill').textContent = 'Week '+weekIdx+' (W'+meso+' of meso)';
 const existingNote = store.note_by_date && store.note_by_date[todayISO()] || ''; document.getElementById('dayNote').value = existingNote;
 document.getElementById('dayNote').addEventListener('change', e => { if(!store.note_by_date) store.note_by_date={}; store.note_by_date[todayISO()] = e.target.value; persist(); });
-if(LIFT_DAYS.has(dow)){ buildForm(); } else { document.getElementById('dayHint').textContent = 'Rest/conditioning day — your 5‑day plan runs Mon–Fri.'; }
+if(LIFT_DAYS.has(dow)){ buildForm();
+    const dd=document.getElementById('dayDebug'); if(dd) dd.textContent = `Today: ${todayName}`; } else { document.getElementById('dayHint').textContent = 'Rest/conditioning day — your 5‑day plan runs Mon–Fri.'; }
 renderRecent();
 </script>
 </body>
