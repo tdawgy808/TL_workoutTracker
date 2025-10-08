@@ -244,6 +244,21 @@ function applyTargetsToCurrentForm(){
   if(status) status.textContent = applied ? `Applied targets to ${applied} sets ✓` : 'No matching targets found';
 }
 
+
+// ---------- Init: auto-build today's form ----------
+function buildFormOnLoad(){
+  try{
+    buildForm();
+  }catch(e){
+    console.error('Build error:', e);
+    const area = document.getElementById('formArea');
+    const wrap = document.getElementById('exerciseForms');
+    if(area) area.style.display='block';
+    if(wrap) wrap.innerHTML = '<div class="muted">There was an error building today\'s workout: '+(e&&e.message? e.message : e)+'.</div>';
+  }
+}
+window.addEventListener('DOMContentLoaded', buildFormOnLoad);
+
 // ---------- Today (single declaration) ----------
 const now = new Date();
 const dow = now.getDay();
